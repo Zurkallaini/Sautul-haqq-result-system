@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Register - Teacher</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:Arial;background:#f5f5f5;padding:15px;margin:0}
+.box{background:#fff;padding:20px;border-radius:8px;max-width:700px;margin:30px auto;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+h2{color:#2563eb;text-align:center}
+select,button{padding:10px;width:100%;margin:8px 0;border:1px solid #ddd;border-radius:5px;font-size:14px}
+button{background:#16a34a;color:#fff;border:none;cursor:pointer;font-weight:bold}
+button:hover{background:#15803d}
+.btn-danger {background: #dc2626;}
+.btn-danger:hover {background: #b91c1c;}
+table{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px}
+th{background:#2563eb;color:#fff;padding:8px;border:1px solid #ddd}
+td{border:1px solid #ddd;padding:8px;text-align:center}
+td:nth-child(2){text-align:left}
+label{font-weight:bold;display:block;margin-top:5px}
+.info{background:#fef3c7;padding:10px;border-radius:5px;font-size:13px;margin:10px 0;border-left:4px solid #f59e0b}
+.actions button{width:auto;padding:6px 10px;font-size:12px}
+.success{color:green;font-weight:bold;margin-top:10px}
+.error{color:red;font-weight:bold;margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2>Class Register</h2>
+<div class="info">⚠️ Teacher Register: You can delete students who left your class. Admin controls adding/updating names.</div>
+
+<label>Select Your Class:</label>
+<select id="clsSelect" onchange="loadStudents()">
+<option value="">Select Class</option>
+</select>
+
+<table id="studentTable" style="display:none">
+<thead>
+<tr>
+<th>S/N</th>
+<th>STUDENT NAME</th>
+<th>ACTION</th>
+</tr>
+</thead>
+<tbody id="studentBody">
+</tbody>
+</table>
+
+<div id="msg"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ'
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+window.onload = loadClasses;
+
+async function loadClasses(){
+  const {data} = await db.from('classes').select('name').order('name');
+  const sel = document.getElementById('clsSelect');
+  sel.innerHTML = '<option value="">Select Class</option>';
+  data?.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+}
+
+async function loadStudents(){
+  const cls = document.getElementById('clsSelect').value;
+  const table = document.getElementById('studentTable');
+  const tbody = document.getElementById('studentBody');
+  
+  if(!cls){
+    table.style.display = 'none';
+    return;
+  }
+  
+  const {data, error} = await db.from('students').select('*').eq('class', cls).order('name');
+  
+  if(error || !data || data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="3">No students found</td></tr>';
+    table.style.display = 'table';
+    return;
+  }
+  
+  table.style.display = 'table';
+  tbody.innerHTML = '';
+  data.forEach((s, i) => {
+    tbody.innerHTML += `
+    <tr data-id="${s.id}">
+      <td>${i+1}</td>
+      <td>${s.name}</td>
+      <td class="actions">
+        <button class="btn-danger" onclick="deleteStudent('${s.id}')">Delete</button>
+      </td>
+    </tr>`;
+  });
+}
+
+// Teacher can delete students from their class
+async function deleteStudent(id){
+  if(!confirm('Delete this student from class register?')) return;
+  
+  const {error} = await db.from('students').delete().eq('id', id);
+  
+  if(error){
+    showMsg('Error: '+error.message, 'error');
+  } else {
+    showMsg('✅ Student deleted from register', 'success');
+    loadStudents(); // refresh list, S/N will renumber 1,2,3...
+  }
+}
+
+function showMsg(text, type) {
+  document.getElementById('msg').innerHTML = `<div class="${type}">${text}</div>`;
+  setTimeout(() => {document.getElementById('msg').innerHTML = ''}, 3000);
+}
+</script>
+</body>
+</html>

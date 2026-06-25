@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body {font-family: Arial; max-width: 700px; margin: auto; padding: 15px; background: #f5f5f5;}
+h2 {border-bottom: 3px solid #007bff; padding-bottom: 5px; color: #333;}
+.box {background: white; padding: 15px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+input, select, button {width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 14px;}
+button {background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold;}
+button:hover {background: #0056b3;}
+.btn-purple {background: #8b5cf6;}
+.btn-purple:hover {background: #7c3aed;}
+.success {color: green; font-weight: bold; margin-top: 5px;}
+.error {color: red; font-weight: bold; margin-top: 5px;}
+label {font-weight: bold; margin-top: 5px; display: block;}
+small {color: #666;}
+</style>
+</head>
+<body>
+
+<h2>Admin Dashboard</h2>
+
+<!-- 1. ADD CLASS -->
+<div class="box">
+<h3>1. Add Class</h3>
+<input type="text" id="className" placeholder="e.g. SS 1A, JSS2">
+<button onclick="addClass()">Add Class</button>
+<div id="classMsg"></div>
+</div>
+
+<!-- 2. ADD SUBJECT -->
+<div class="box">
+<h3>2. Add Subject</h3>
+<input type="text" id="subjectName" placeholder="e.g. Mathematics">
+<button onclick="addSubject()">Add Subject</button>
+<div id="subjectMsg"></div>
+</div>
+
+<!-- 3. ASSIGN SUBJECT TO CLASS -->
+<div class="box">
+<h3>3. Assign Subject to Class</h3>
+<label>Select Class</label>
+<select id="assignClass"><option value="">Loading classes...</option></select>
+
+<label>Select Subject</label>
+<select id="assignSubject"><option value="">Loading subjects...</option></select>
+
+<button onclick="assignSubject()">Assign Subject</button>
+<div id="assignMsg"></div>
+<small>Link subjects to each class</small>
+</div>
+
+<!-- 4. ADD STUDENT - CLEAN, NO REG NO -->
+<div class="box">
+<h3>4. Add Student</h3>
+<input type="text" id="studName" placeholder="Student Full Name">
+
+<label>Select Class</label>
+<select id="studClass"><option value="">Loading classes...</option></select>
+
+<button onclick="addStudent()">Save Student</button>
+<div id="studMsg"></div>
+</div>
+
+<!-- 5. MANAGE STUDENTS - LINK TO FULL PAGE -->
+<div class="box">
+<h3>5. Manage Students</h3>
+<p>For classes with 50+ students, use full page manager to avoid scrolling.</p>
+<button class="btn-purple" onclick="window.location.href='managestudents.html'">
+Open Full Student Manager →
+</button>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ'
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+window.onload = function() {
+    loadClasses();
+    loadSubjects();
+}
+
+async function addClass() {
+    const name = document.getElementById('className').value.trim();
+    if(!name) {showMsg('classMsg', 'Enter class name', 'error'); return}
+    const {error} = await supabaseClient.from('classes').insert({name});
+    if(error) showMsg('classMsg', 'Error: ' + error.message, 'error');
+    else {
+        showMsg('classMsg', '✅ Class added successfully', 'success');
+        document.getElementById('className').value = '';
+        loadClasses();
+    }
+}
+
+async function addSubject() {
+    const name = document.getElementById('subjectName').value.trim();
+    if(!name) {showMsg('subjectMsg', 'Enter subject name', 'error'); return}
+    const {error} = await supabaseClient.from('subjects').insert({name});
+    if(error) showMsg('subjectMsg', 'Error: ' + error.message, 'error');
+    else {
+        showMsg('subjectMsg', '✅ Subject added successfully', 'success');
+        document.getElementById('subjectName').value = '';
+        loadSubjects();
+    }
+}
+
+async function assignSubject() {
+    const class_name = document.getElementById('assignClass').value;
+    const subject_id = document.getElementById('assignSubject').value;
+
+    if(!class_name ||!subject_id) {
+        showMsg('assignMsg', '⚠️ Please select both class and subject', 'error');
+        return;
+    }
+
+    const {error} = await supabaseClient.from('class_subjects').insert({class_name, subject_id});
+    if(error) {
+        if(error.code === '23505') {
+            showMsg('assignMsg', '⚠️ This subject already assigned to this class', 'error');
+        } else {
+            showMsg('assignMsg', 'Error: ' + error.message, 'error');
+        }
+    } else {
+        showMsg('assignMsg', '✅ Subject assigned successfully', 'success');
+        document.getElementById('assignSubject').value = '';
+    }
+}
+
+// FIXED: Insert student without reg_no
+async function addStudent() {
+    const name = document.getElementById('studName').value.trim();
+    const cls = document.getElementById('studClass').value;
+    if(!name ||!cls) {showMsg('studMsg', 'Enter name and select class', 'error'); return}
+    
+    // Insert only name + class. No reg_no
+    const {error} = await supabaseClient.from('students').insert({name, class: cls});
+    
+    if(error) {
+        showMsg('studMsg', 'Error: ' + error.message, 'error');
+    } else {
+        showMsg('studMsg', '✅ Student added successfully', 'success');
+        document.getElementById('studName').value = '';
+    }
+}
+
+async function loadClasses() {
+    const {data} = await supabaseClient.from('classes').select('*').order('name');
+    const selects = [document.getElementById('assignClass'), document.getElementById('studClass')];
+    selects.forEach(sel => {
+        sel.innerHTML = '<option value="">Select Class</option>';
+        data?.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+    });
+}
+
+async function loadSubjects() {
+    const {data} = await supabaseClient.from('subjects').select('*').order('name');
+    const sel = document.getElementById('assignSubject');
+    sel.innerHTML = '<option value="">Select Subject</option>';
+    data?.forEach(s => sel.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+}
+
+function showMsg(id, text, type) {
+    document.getElementById(id).innerHTML = `<p class="${type}">${text}</p>`;
+    setTimeout(() => document.getElementById(id).innerHTML = '', 3000);
+}
+</script>
+</body>
+</html>

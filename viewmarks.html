@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>View Marks</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f5f5f5;padding:10px}
+  .box{background:#fff;padding:15px;border-radius:8px;max-width:1100px;margin:auto;overflow-x:auto}
+  h2{color:#2563eb;text-align:center;margin-top:0}
+  .controls{background:#f8f9fa;padding:12px;border-radius:5px;margin-bottom:15px;display:flex;flex-wrap:wrap;gap:8px}
+  select,input{padding:8px;border:1px solid #ddd;border-radius:5px}
+  button{background:#2563eb;color:#fff;border:none;padding:10px 15px;border-radius:5px;cursor:pointer;font-weight:bold}
+  button:hover{background:#1e40af}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px}
+  th{background:#2563eb;color:#fff;padding:8px;border:1px solid #ddd}
+  td{border:1px solid #ddd;padding:6px;text-align:center}
+  td:nth-child(2){text-align:left}
+  .back{margin-bottom:10px}
+  .error{color:red;margin-top:10px}
+  .success{color:green;margin-top:10px}
+  @media print{.no-print{display:none} body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="box">
+  <button class="back no-print" onclick="window.location.href='teacher.html'">← Back to Dashboard</button>
+  <h2>VIEW SAVED MARKS</h2>
+  
+  <div class="controls no-print">
+    <select id="clsSelect">
+      <option>Select Class</option>
+    </select>
+    
+    <select id="subjSelect">
+      <option>Select Subject</option>
+    </select>
+    
+    <select id="term">
+      <option>1st Term</option>
+      <option>2nd Term</option>
+      <option>3rd Term</option>
+    </select>
+    
+    <input type="text" id="session" value="2025/2026" placeholder="2025/2026" style="width:120px">
+    
+    <button onclick="viewMarks()">View Marks</button>
+    <button onclick="window.print()">Print</button>
+  </div>
+  
+  <table id="marksTable">
+    <tr>
+      <th>S/N</th>
+      <th>STUDENT NAME</th>
+      <th>1ST C.A/20</th>
+      <th>2ND C.A/20</th>
+      <th>EXAM/60</th>
+      <th>TOTAL/100</th>
+      <th>GRADE</th>
+      <th>POSITION</th>
+    </tr>
+    <tr><td colspan="8">Select Class + Subject + Term + Session then click View Marks</td></tr>
+  </table>
+  
+  <div id="msg"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ'
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+loadDropdowns()
+
+async function loadDropdowns(){
+  let {data: classes} = await db.from('classes').select('name').order('name')
+  let {data: subjects} = await db.from('subjects').select('*').order('name')
+  
+  classes?.forEach(c=>{document.getElementById('clsSelect').innerHTML += `<option>${c.name}</option>`})
+  subjects?.forEach(s=>{document.getElementById('subjSelect').innerHTML += `<option value="${s.id}">${s.name}</option>`})
+}
+
+async function viewMarks(){
+  let cls = document.getElementById('clsSelect').value
+  let subjId = document.getElementById('subjSelect').value
+  let term = document.getElementById('term').value
+  let session = document.getElementById('session').value
+  
+  if(cls=='Select Class' || subjId=='Select Subject'){
+    showMsg('Select Class + Subject first','error'); 
+    return
+  }
+  
+  showMsg('Loading...','success')
+  
+  // 1. Get students in class - NO reg_no
+  let {data: students, error: err1} = await db.from('students')
+    .select('id, name')
+    .eq('class', cls)
+    .order('name')
+  
+  if(err1){showMsg('Error loading students: '+err1.message,'error'); return}
+  
+  // 2. Get marks for this class+subject+term+session
+  let {data: marks, error: err2} = await db.from('marks')
+    .select('student_id, ca1, ca2, exam, total, grade, position')
+    .eq('class', cls)
+    .eq('subject_id', subjId)
+    .eq('term', term)
+    .eq('session', session)
+    .order('total', {ascending:false})
+  
+  if(err2){showMsg('Error loading marks: '+err2.message,'error'); return}
+  
+  let table = document.getElementById('marksTable')
+  table.innerHTML = `<tr>
+    <th>S/N</th><th>STUDENT NAME</th>
+    <th>1ST C.A/20</th><th>2ND C.A/20</th><th>EXAM/60</th>
+    <th>TOTAL/100</th><th>GRADE</th><th>POSITION</th>
+  </tr>`
+  
+  if(!marks || marks.length==0){
+    table.innerHTML += `<tr><td colspan="8">No marks saved yet for this selection</td></tr>`
+    showMsg('No marks found','error')
+    return
+  }
+  
+  // 3. Match marks with student info - no reg_no
+  marks.forEach((m,i)=>{
+    let stud = students?.find(s => s.id == m.student_id) || {}
+    table.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${stud.name || 'Unknown Student'}</td>
+        <td>${m.ca1||0}</td>
+        <td>${m.ca2||0}</td>
+        <td>${m.exam||0}</td>
+        <td><strong>${m.total||0}</strong></td>
+        <td><strong>${m.grade||'-'}</strong></td>
+        <td><strong>${m.position||'-'}</strong></td>
+      </tr>
+    `
+  })
+  
+  showMsg(marks.length + ' marks loaded successfully ✅','success')
+}
+
+function showMsg(text, type){
+  document.getElementById('msg').innerHTML = `<div class="${type}">${text}</div>`
+  setTimeout(()=>{document.getElementById('msg').innerHTML = ''}, 4000)
+}
+</script>
+</body>
+</html>

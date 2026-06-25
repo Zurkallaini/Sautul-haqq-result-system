@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mark Sheet</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f5f5f5;padding:20px}
+  .box{max-width:1100px;margin:auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+  h2{text-align:center;color:#2563eb;margin-bottom:20px}
+  .controls{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap}
+  select,input,button{padding:8px;border:1px solid #ddd;border-radius:5px;font-size:14px}
+  button{background:#16a34a;color:#fff;border:none;cursor:pointer;font-weight:bold}
+  button:hover{background:#15803d}
+  table{width:100%;border-collapse:collapse;margin-top:15px}
+  th,td{border:1px solid #ddd;padding:8px;text-align:center}
+  th{background:#2563eb;color:#fff;font-size:13px}
+  td input{width:60px;border:1px solid #ccc;text-align:center}
+  .total{font-weight:bold;background:#f0f9ff}
+  .rank{background:#fef3c7;font-weight:bold}
+  sup{font-size:10px;vertical-align:super}
+  @media print{.controls{display:none} body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>MARK SHEET</h2>
+  
+  <div class="controls">
+    <select id="cls"><option>Select Class</option></select>
+    <select id="subject"><option>Select Subject</option></select>
+    <select id="term">
+      <option>Select Term</option>
+      <option>1st Term</option>
+      <option>2nd Term</option>
+      <option>3rd Term</option>
+    </select>
+    <input type="text" id="session" placeholder="2025/2026" value="2025/2026" style="width:120px">
+    <button onclick="loadStudents()">Load Students</button>
+    <button onclick="saveMarks()">Save All Marks</button>
+    <button onclick="window.print()">Print</button>
+  </div>
+
+  <table id="markTable">
+    <thead>
+      <tr>
+        <th>S/N</th>
+        <th>Student Name</th>
+        <th>1st CA<br>/20</th>
+        <th>2nd CA<br>/20</th>
+        <th>Exam<br>/60</th>
+        <th>TOTAL<br>/100</th>
+        <th>GRADE</th>
+        <th>POSITION</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <tr><td colspan="8">Select Class + Subject + Term + Session then click Load Students</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ'
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+const cls = document.getElementById('cls')
+const subject = document.getElementById('subject')
+const term = document.getElementById('term')
+const session = document.getElementById('session')
+const tbody = document.getElementById('tbody')
+
+// FIXED: Load with error check
+async function loadDropdowns(){
+  console.log('Loading dropdowns...')
+  
+  let {data: classes, error: cErr} = await db.from('classes').select('name').order('name')
+  if(cErr){alert('Error loading classes: '+cErr.message); return}
+  cls.innerHTML = '<option>Select Class</option>'
+  classes?.forEach(c=> cls.innerHTML += `<option>${c.name}</option>`)
+  
+  let {data: subjects, error: sErr} = await db.from('subjects').select('id,name').order('name')
+  if(sErr){alert('Error loading subjects: '+sErr.message); return}
+  subject.innerHTML = '<option>Select Subject</option>'
+  subjects?.forEach(s=> subject.innerHTML += `<option value="${s.id}">${s.name}</option>`)
+  
+  console.log('Loaded:', classes?.length, 'classes,', subjects?.length, 'subjects')
+}
+loadDropdowns()
+
+// FIXED: No double suffix + superscript
+function getPositionText(pos){
+  if(!pos || pos==0) return '-'
+  let num = parseInt(pos.toString().replace(/\D/g,'')) // remove ST/ND/RD/TH if exists
+  if(isNaN(num)) return '-'
+  
+  let j = num % 10, k = num % 100
+  let suffix = 'TH'
+  if(j==1 && k!=11) suffix = 'ST'
+  else if(j==2 && k!=12) suffix = 'ND'
+  else if(j==3 && k!=13) suffix = 'RD'
+  
+  return `${num}<sup>${suffix}</sup>`
+}
+
+function getGrade(total){
+  if(total>=70) return 'A'
+  if(total>=60) return 'B'
+  if(total>=50) return 'C'
+  if(total>=45) return 'D'
+  if(total>=40) return 'E'
+  return 'F'
+}
+
+async function loadStudents(){
+  if(cls.value=='Select Class' || subject.value=='Select Subject' || term.value=='Select Term' || session.value.trim()==''){
+    alert('Select Class, Subject, Term & enter Session first'); return
+  }
+  
+  let {data: students} = await db.from('students')
+    .select('*')
+    .eq('class', cls.value)
+    .order('name')
+  
+  if(!students || students.length==0){
+    tbody.innerHTML = '<tr><td colspan="8">No students in this class</td></tr>'; return
+  }
+  
+  let {data: marks} = await db.from('marks')
+    .select('*')
+    .eq('class', cls.value)
+    .eq('subject_id', subject.value)
+    .eq('term', term.value)
+    .eq('session', session.value.trim())
+  
+  tbody.innerHTML = ''
+  students.forEach((s,i)=>{
+    let m = marks?.find(x=>x.student_id==s.id) || {}
+    let total = m.total || 0
+    let grade = m.grade || '-'
+    
+    tbody.innerHTML += `
+      <tr data-id="${s.id}">
+        <td>${i+1}</td>
+        <td style="text-align:left">${s.name}</td>
+        <td><input type="number" class="ca1" value="${m.ca1||''}" max="20" oninput="calcRow(this)"></td>
+        <td><input type="number" class="ca2" value="${m.ca2||''}" max="20" oninput="calcRow(this)"></td>
+        <td><input type="number" class="exam" value="${m.exam||''}" max="60" oninput="calcRow(this)"></td>
+        <td class="total">${total}</td>
+        <td class="grade">${grade}</td>
+        <td class="rank">${getPositionText(m.position)}</td>
+      </tr>
+    `
+  })
+  
+  calcAllPositions()
+}
+
+function calcRow(input){
+  let row = input.closest('tr')
+  let ca1 = parseFloat(row.querySelector('.ca1').value) || 0
+  let ca2 = parseFloat(row.querySelector('.ca2').value) || 0
+  let exam = parseFloat(row.querySelector('.exam').value) || 0
+  
+  if(ca1>20) {ca1=20; row.querySelector('.ca1').value=20}
+  if(ca2>20) {ca2=20; row.querySelector('.ca2').value=20}
+  if(exam>60) {exam=60; row.querySelector('.exam').value=60}
+  
+  let total = ca1 + ca2 + exam
+  row.querySelector('.total').innerText = total
+  row.querySelector('.grade').innerText = getGrade(total)
+  
+  calcAllPositions()
+}
+
+// FIXED: Proper ranking with ties
+function calcAllPositions(){
+  let rows = Array.from(tbody.querySelectorAll('tr[data-id]'))
+  let data = rows.map(r=> ({
+    row: r,
+    total: parseFloat(r.querySelector('.total').innerText) || 0
+  }))
+  
+  data.sort((a,b)=> b.total - a.total)
+  
+  let currentPos = 1
+  data.forEach((d, i)=>{
+    if(i>0 && d.total < data[i-1].total){
+      currentPos = i + 1
+    }
+    d.row.querySelector('.rank').innerHTML = getPositionText(currentPos)
+  })
+}
+
+async function saveMarks(){
+  if(subject.value=='Select Subject'){
+    alert('Select Subject first'); return
+  }
+  
+  let rows = tbody.querySelectorAll('tr[data-id]')
+  let saves = []
+  
+  rows.forEach(row=>{
+    let studId = row.dataset.id
+    let ca1 = parseFloat(row.querySelector('.ca1').value) || 0
+    let ca2 = parseFloat(row.querySelector('.ca2').value) || 0
+    let exam = parseFloat(row.querySelector('.exam').value) || 0
+    let total = ca1 + ca2 + exam
+    let grade = row.querySelector('.grade').innerText
+    
+    let posHtml = row.querySelector('.rank').innerHTML
+    let pos = parseInt(posHtml.replace(/<[^>]*>/g,'')) || null
+    
+    if(total>0){
+      saves.push({
+        student_id: studId,
+        class: cls.value,
+        subject_id: subject.value,
+        term: term.value,
+        session: session.value.trim(),
+        ca1: ca1,
+        ca2: ca2,
+        exam: exam,
+        total: total,
+        grade: grade,
+        position: pos
+      })
+    }
+  })
+  
+  if(saves.length==0){alert('Enter marks first'); return}
+  
+  let {error} = await db.from('marks').upsert(saves, {onConflict: 'student_id,subject_id,class,term,session'})
+  
+  if(error) alert('Error: '+error.message)
+  else alert('All marks saved successfully! ✅')
+}
+</script>
+</body>
+</html>

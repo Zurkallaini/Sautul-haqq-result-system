@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Portal</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f0f4f8;padding:20px;margin:0}
+  .box{background:#fff;padding:25px;border-radius:8px;max-width:500px;margin:50px auto;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+  h2{color:#2563eb;text-align:center;margin-top:0}
+  input{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:5px;box-sizing:border-box}
+  button{background:#2563eb;color:#fff;border:none;padding:12px;width:100%;border-radius:5px;cursor:pointer;font-size:16px;margin-top:10px}
+  button:hover{background:#1e40af}
+  .error{color:red;text-align:center;margin-top:10px}
+  .success{color:green;text-align:center;margin-top:10px}
+  #dashboard{display:none}
+  .welcome{text-align:center;margin-bottom:20px;color:#333}
+  .info{background:#eff6ff;padding:10px;border-radius:5px;font-size:13px;margin:10px 0}
+  .btn-purple{background:#7c3aed;color:#fff;border:none;padding:14px;border-radius:6px;cursor:pointer;font-weight:bold;width:100%;margin-top:10px;font-size:16px}
+.btn-purple:hover{background:#6d28d9}
+</style>
+</head>
+<body>
+<div class="box" id="loginBox">
+  <h2>Teacher Login</h2>
+  <input type="text" id="teacherCode" placeholder="Enter Teacher Code">
+  <button onclick="loginTeacher()">Login</button>
+  <div id="loginMsg"></div>
+</div>
+
+<div class="box" id="dashboard">
+  <div class="welcome">
+    <h2>Welcome <span id="teacherName"></span></h2>
+    <div class="info">You can access all classes and subjects. Select the class + subject you teach in the mark sheet.</div>
+  </div>
+  <button onclick="window.location.href='marksheet.html'">Enter/Edit Marks</button>
+  <button onclick="window.location.href='viewmarks.html'" style="background:#16a34a">View Saved Marks</button>
+  <button onclick="window.location.href='viewstudents.html'">View Students List</button>
+  <button class="btn-purple" onclick="window.location.href='teacher_comment.html'">Teacher Comment & Attendance</button>
+  <button onclick="window.location.href='report.html'" style="background:purple;color:white;padding:12px;border:none;border-radius:8px;width:100%;margin:8px 0;font-size:16px;font-weight:bold;cursor:pointer">
+  Class Report Sheet
+</button>
+  <button onclick="logout()" style="background:#dc2626">Logout</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ'
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+if(localStorage.getItem('teacher')){
+  showDashboard(JSON.parse(localStorage.getItem('teacher')))
+}
+
+async function loginTeacher(){
+  let code = document.getElementById('teacherCode').value.trim()
+  if(!code){showMsg('Enter teacher code','error'); return}
+  
+  let {data, error} = await db.from('teachers').select('*').eq('code', code).single()
+  
+  if(error || !data){
+    showMsg('Invalid teacher code','error')
+  } else {
+    localStorage.setItem('teacher', JSON.stringify(data))
+    showDashboard(data)
+    showMsg('Login successful!','success')
+  }
+}
+
+function showDashboard(teacher){
+  document.getElementById('loginBox').style.display = 'none'
+  document.getElementById('dashboard').style.display = 'block'
+  document.getElementById('teacherName').innerText = teacher.name
+}
+
+function logout(){
+  localStorage.removeItem('teacher')
+  location.reload()
+}
+
+function showMsg(text, type){
+  document.getElementById('loginMsg').innerHTML = `<div class="${type}">${text}</div>`
+}
+</script>
+</body>
+</html>

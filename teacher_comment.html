@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Comment & Attendance</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:Arial;background:#f5f5f5;padding:15px;margin:0}
+.box{background:#fff;padding:20px;border-radius:8px;max-width:1300px;margin:20px auto;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+h2{color:#2563eb;text-align:center;margin-bottom:20px}
+select,input{padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:5px;font-size:14px}
+select{width:300px}
+label{font-weight:bold;display:block;margin-top:10px}
+table{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px}
+th{background:#2563eb;color:#fff;padding:10px;border:1px solid #ddd;position:sticky;top:0}
+td{border:1px solid #ddd;padding:8px;text-align:center}
+td:nth-child(2){text-align:left}
+.comment-input{width:98%;padding:8px;border:1px solid #ccc;font-size:14px;min-height:35px}
+.att-input{width:80px;padding:8px;border:1px solid #ccc;font-size:14px}
+.btn-save-all{background:#16a34a;color:#fff;border:none;padding:12px 25px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:16px;margin-top:15px}
+.btn-save-all:hover{background:#15803d}
+.btn-save-all:disabled{background:#9ca3af;cursor:not-allowed}
+.table-wrap{overflow-x:auto;max-height:70vh;overflow-y:auto}
+.btn-back{background:#6b7280;color:#fff;border:none;padding:10px 15px;border-radius:5px;cursor:pointer;margin-bottom:15px}
+.topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.msg{margin-top:10px;font-weight:bold}
+.success{color:green}
+.error{color:red}
+</style>
+</head>
+<body>
+
+<div class="box">
+<div class="topbar">
+<h2>Teacher Comment & Attendance - All Students</h2>
+<button class="btn-back" onclick="window.location.href='teacher.html'">← Back to Teacher Portal</button>
+</div>
+
+<label>Select Class:</label>
+<select id="classSelect" onchange="loadStudents()">
+<option value="">Select Class</option>
+</select>
+
+<label>Term:</label>
+<select id="term">
+<option>1st Term</option>
+<option>2nd Term</option>
+<option>3rd Term</option>
+</select>
+
+<label>Session:</label>
+<input type="text" id="session" value="2025/2026">
+
+<div class="table-wrap">
+<table id="studentsTable" style="display:none">
+<thead>
+<tr>
+<th style="width:5%">S/N</th>
+<th style="width:25%">STUDENT NAME</th>
+<th style="width:55%">TEACHER COMMENT</th>
+<th style="width:15%">ATTENDANCE %</th>
+</tr>
+</thead>
+<tbody id="studentsBody">
+</tbody>
+</table>
+</div>
+
+<button class="btn-save-all" id="saveAllBtn" onclick="saveAll()" style="display:none">Save All Comments & Attendance</button>
+<div id="msg" class="msg"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ'
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+window.onload = loadClasses;
+
+async function loadClasses() {
+    const {data} = await supabaseClient.from('classes').select('*').order('name');
+    const sel = document.getElementById('classSelect');
+    sel.innerHTML = '<option value="">Select Class</option>';
+    data?.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+}
+
+async function loadStudents(){
+    const cls = document.getElementById('classSelect').value;
+    const table = document.getElementById('studentsTable');
+    const tbody = document.getElementById('studentsBody');
+    const saveBtn = document.getElementById('saveAllBtn');
+    
+    if(!cls){
+        table.style.display = 'none';
+        saveBtn.style.display = 'none';
+        return;
+    }
+    
+    const {data: students} = await supabaseClient.from('students').select('*').eq('class', cls).order('name');
+    const {data: savedComments} = await supabaseClient.from('report_comments').select('*').eq('class_name', cls);
+    
+    const commentMap = {};
+    savedComments?.forEach(c => commentMap[c.student_id] = c);
+    
+    table.style.display = 'table';
+    saveBtn.style.display = 'block';
+    tbody.innerHTML = '';
+    students.forEach((s, i) => {
+        const saved = commentMap[s.id];
+        const commentVal = saved?.teacher_comment || '';
+        const attVal = saved?.attendance || '';
+        
+        tbody.innerHTML += `
+        <tr data-id="${s.id}">
+            <td>${i+1}</td>
+            <td>${s.name}</td>
+            <td><input type="text" class="comment-input" id="comment_${s.id}" value="${commentVal}"></td>
+            <td><input type="number" class="att-input" id="att_${s.id}" value="${attVal}" min="0" max="100"></td>
+        </tr>`;
+    });
+}
+async function saveAll(){
+    const cls = document.getElementById('classSelect').value;
+    const termVal = document.getElementById('term')?.value || '1st Term'; // Add term dropdown
+    const sessionVal = document.getElementById('session')?.value || '2025/2026'; // Add session input
+
+    const rows = document.querySelectorAll('#studentsBody tr[data-id]');
+    const btn = document.getElementById('saveAllBtn');
+    const msg = document.getElementById('msg');
+
+    btn.disabled = true;
+    btn.innerHTML = 'Saving...';
+
+    const dataToSave = [];
+    const commentMap = {};
+
+    rows.forEach(row => {
+        const studentId = row.getAttribute('data-id');
+        const comment = document.getElementById('comment_'+studentId).value.trim();
+        const attendance = document.getElementById('att_'+studentId).value.trim();
+
+        if(attendance!== ''){
+            dataToSave.push({
+                student_id: studentId,
+                class_name: cls,
+                term: termVal, // <-- ADDED
+                session: sessionVal, // <-- ADDED
+                teacher_comment: comment,
+                attendance: parseInt(attendance)
+            });
+            commentMap[studentId] = {comment: comment, attendance: parseInt(attendance)};
+        }
+    });
+
+    const {error} = await supabaseClient.from('report_comments').upsert(dataToSave, {onConflict: 'student_id,class_name,term,session'});
+    localStorage.setItem('teacherComments_' + cls, JSON.stringify(commentMap));
+
+    if(error){
+        showMsg('❌ Error: ' + error.message, 'error');
+    } else {
+        showMsg(`✓ Saved ${dataToSave.length} students. Report will auto-fill now.`, 'success');
+    }
+
+    btn.innerHTML = 'Save All Comments & Attendance';
+    btn.disabled = false;
+}
+
+function showMsg(text, type) {
+    const msg = document.getElementById('msg');
+    msg.className = 'msg ' + type;
+    msg.innerHTML = text;
+    setTimeout(() => msg.innerHTML = '', 4000);
+}
+</script>
+</body>
+</html>

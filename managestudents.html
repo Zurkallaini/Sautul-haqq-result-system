@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Students - Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:Arial;background:#f5f5f5;padding:15px;margin:0}
+.box{background:#fff;padding:20px;border-radius:8px;max-width:1200px;margin:20px auto;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+h2{color:#2563eb;text-align:center}
+select,button{padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:5px;font-size:14px}
+select{width:300px}
+button{background:#007bff;color:#fff;border:none;cursor:pointer;font-weight:bold}
+button:hover{background:#0056b3}
+.btn-danger {background: #dc2626;}
+.btn-danger:hover {background: #b91c1c;}
+.btn-edit {background: #f59e0b;}
+.btn-edit:hover {background: #d97706;}
+.btn-back {background:#6b7280}
+.topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+table{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px;table-layout:fixed}
+th{background:#2563eb;color:#fff;padding:10px;border:1px solid #ddd;position:sticky;top:0}
+td{border:1px solid #ddd;padding:6px;text-align:center}
+td:nth-child(1){width:60px} /* S/N narrow */
+td:nth-child(2){width:auto;text-align:left} /* Name takes rest of space */
+td:nth-child(3){width:200px} /* Actions fixed */
+.actions button{width:auto;padding:6px 10px;margin:2px;font-size:12px}
+.student-input{width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;text-align:left;box-sizing:border-box;font-size:14px}
+.success{color:green;font-weight:bold;margin-top:10px}
+.error{color:red;font-weight:bold;margin-top:10px}
+.table-wrap{overflow-x:auto;max-height:80vh;overflow-y:auto}
+</style>
+</head>
+<body>
+
+<div class="box">
+<div class="topbar">
+<h2>Manage Students - Full Page</h2>
+<button class="btn-back" onclick="window.location.href='admin.html'">← Back to Admin Dashboard</button>
+</div>
+
+<label>Select Class to View/Edit Students:</label>
+<select id="viewClass" onchange="loadStudentsList()">
+<option value="">Select Class</option>
+</select>
+
+<div class="table-wrap">
+<table id="studentsTable" style="display:none">
+<thead>
+<tr>
+<th>S/N</th>
+<th>STUDENT NAME</th>
+<th>ACTIONS</th>
+</tr>
+</thead>
+<tbody id="studentsBody">
+</tbody>
+</table>
+</div>
+
+<div id="manageMsg"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ'
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+window.onload = loadClasses;
+
+async function loadClasses() {
+    const {data} = await supabaseClient.from('classes').select('*').order('name');
+    const sel = document.getElementById('viewClass');
+    sel.innerHTML = '<option value="">Select Class</option>';
+    data?.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+}
+
+async function loadStudentsList(){
+    const cls = document.getElementById('viewClass').value;
+    const table = document.getElementById('studentsTable');
+    const tbody = document.getElementById('studentsBody');
+    
+    if(!cls){
+        table.style.display = 'none';
+        return;
+    }
+    
+    const {data, error} = await supabaseClient.from('students').select('*').eq('class', cls).order('name');
+    
+    if(error || !data || data.length === 0){
+        tbody.innerHTML = '<tr><td colspan="3">No students found in this class</td></tr>';
+        table.style.display = 'table';
+        return;
+    }
+    
+    table.style.display = 'table';
+    tbody.innerHTML = '';
+    data.forEach((s, i) => {
+        tbody.innerHTML += `
+        <tr data-id="${s.id}">
+            <td>${i+1}</td>
+            <td><input type="text" value="${s.name}" id="name_${s.id}" class="student-input"></td>
+            <td class="actions">
+                <button class="btn-edit" onclick="updateStudent('${s.id}')">Update</button>
+                <button class="btn-danger" onclick="deleteStudent('${s.id}')">Delete</button>
+            </td>
+        </tr>`;
+    });
+}
+
+async function updateStudent(id){
+    const newName = document.getElementById('name_'+id).value.trim();
+    if(!newName){alert('Enter student name'); return}
+    
+    const {error} = await supabaseClient.from('students').update({name: newName}).eq('id', id);
+    
+    if(error){
+        showMsg('Error: '+error.message, 'error');
+    } else {
+        showMsg('✅ Student name updated', 'success');
+    }
+}
+
+async function deleteStudent(id){
+    if(!confirm('Delete this student? This cannot be undone.')) return;
+    
+    const {error} = await supabaseClient.from('students').delete().eq('id', id);
+    
+    if(error){
+        showMsg('Error: '+error.message, 'error');
+    } else {
+        showMsg('✅ Student deleted', 'success');
+        loadStudentsList();
+    }
+}
+
+function showMsg(text, type) {
+    document.getElementById('manageMsg').innerHTML = `<p class="${type}">${text}</p>`;
+    setTimeout(() => document.getElementById('manageMsg').innerHTML = '', 3000);
+}
+</script>
+</body>
+</html>

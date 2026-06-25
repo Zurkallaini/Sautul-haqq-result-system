@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statement of Result - Editable</title>
+<style>
+body{font-family: Arial, sans-serif;background:#fff;margin:20px;padding:20px}
+.container{width:1000px;margin:auto;border:1px solid #ddd;padding:20px;background:white;margin-bottom:30px;page-break-after:always}
+.header{display:grid;grid-template-columns: 1fr 180px 1fr;align-items:center;margin-bottom:10px}
+.left,.right{text-align:center}
+.right { direction:rtl; }
+.school{font-size:18px;font-weight:bold;line-height:1.5}
+.small{font-size:12px}
+.statement{display:flex;justify-content:center;margin:15px 0}
+.statement div{background:#d9ebff;padding:8px 30px;font-weight:bold;border:1px solid #6c8ebf;font-size:18px}
+.controls{position: fixed;top: 0;left: 0;right: 0;background: #2563eb;padding: 10px;display: flex;gap: 8px;flex-wrap: wrap;z-index: 1000;box-shadow: 0 2px 5px rgba(0,0,0,0.2)}
+.controls select,.controls input,.controls button{padding: 8px 12px;border: none;border-radius: 5px;font-size: 13px}
+.controls button{background: #fff;color: #2563eb;font-weight: bold;cursor: pointer}
+.info{margin-top:15px}
+.row{display:flex;flex-wrap: wrap;gap:15px;margin:10px 0;align-items: center}
+.field{display:flex;align-items:center;flex:1;min-width:280px}
+.field label{white-space: nowrap;margin-right:8px;font-weight:500}
+.input-line{border:none;border-bottom:2px solid #000;flex:1;padding:4px 6px;font-size:15px;background:transparent}
+.input-line:focus{outline:none;border-bottom:2px solid #0066cc;background:#f8fbff}
+.position-top-input{border:none;border-bottom:2px solid #000;background:transparent;width:140px;text-align:center;font-size:19px;font-weight:bold;color:#d32f2f}
+.days-present-input {max-width: 120px!important;flex: none!important;}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th,td{border:2px solid #000;text-align:center;padding:6px 4px;font-size:13px;vertical-align: middle}
+.sn-col { width: 35px; }
+.subject-col { width: 170px; }
+.ca-col,.exam-col,.total-col,.grade-col,.pos-col { width: 52px; }
+.mawad-col { width: 110px; }
+.editable-cell{border:none;background:transparent;width:100%;text-align:center;font-size:13px}
+.mawad-input {font-size: 15px!important;font-weight: 500;text-align: center;width: 100%;padding: 4px 2px;}
+.comment-line{border:none;border-bottom:2px solid #000;flex:1;padding:4px 8px;font-size:15px;background:transparent}
+.sig-area{height:60px;width:100%;border:2px dashed #aaa;margin-bottom:8px;position:relative;background:#fafafa;overflow:hidden}
+.sig-preview{width:100%;height:100%;object-fit:fill;display:block}
+.remove-btn{position:absolute;top:2px;right:2px;background:red;color:white;border:none;font-size:10px;padding:2px 5px;cursor:pointer;z-index:10;display:none}
+@media print {.controls {display: none} body {margin: 0; padding: 0}.container{border:none;margin:0}}
+
+/* Superscript for ST, ND, RD, TH */
+.sup {font-size: 0.65em; vertical-align: super; line-height: 0.8em;}
+</style>
+</head>
+<body>
+<div class="controls no-print">
+  <select id="clsSelect"><option>Select Class</option></select>
+  <select id="term"><option>1st Term</option><option>2nd Term</option><option>3rd Term</option></select>
+  <input type="text" id="session" value="2025/2026" style="width:100px">
+  <button onclick="loadClassReports()">Load All Reports</button>
+  <button onclick="copyMawadToAll()">Copy مواد To All</button>
+  <button onclick="saveAllMarks()">Save All</button>
+  <button onclick="window.print()">Print All</button>
+</div>
+<div id="reportsContainer" style="margin-top:60px"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ'
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+const clsSelect = document.getElementById('clsSelect')
+const term = document.getElementById('term')
+const session = document.getElementById('session')
+const reportsContainer = document.getElementById('reportsContainer')
+
+window.onload = async function(){
+  try {
+    let {data: classes} = await db.from('classes').select('name').order('name')
+    clsSelect.innerHTML = '<option>Select Class</option>'
+    classes?.forEach(c=> clsSelect.innerHTML += `<option>${c.name}</option>`)
+  } catch(e) {
+    console.error(e)
+  }
+}
+
+function getPositionText(pos){
+  if(!pos || pos==0) return '-'
+  let num = parseInt(pos.toString().replace(/\D/g,''))
+  if(isNaN(num)) return '-'
+
+  let j = num % 10, k = num % 100
+  let suffix = 'TH'
+  if(j==1 && k!=11) suffix = 'ST'
+  else if(j==2 && k!=12) suffix = 'ND'
+  else if(j==3 && k!=13) suffix = 'RD'
+
+  return `${num}<sup class="sup">${suffix}</sup>`
+}
+
+function getGrade(total) {
+  if(total >= 70) return 'A';
+  if(total >= 60) return 'B';
+  if(total >= 50) return 'C';
+  if(total >= 45) return 'D';
+  if(total >= 40) return 'E';
+  return 'F';
+}
+
+function getHeadmasterComment(total) {
+  if(total >= 900) return 'Excellent performance keep it up.';
+  if(total >= 700) return 'A very good Performance keep it up.';
+  if(total >= 600) return 'Good performance put in more effort.';
+  if(total >= 500) return 'Fair performance, you need to work harder.';
+  if(total >= 400) return 'Poor performance, you need to work harder and catch up.';
+  return 'Very poor performance, you need to work harder and catch up.';
+}
+
+function copyMawadToAll(){
+  let subjectMawadMap = {}
+  let firstContainer = document.querySelector('.container')
+  if(!firstContainer) {alert('Load reports first'); return}
+
+  firstContainer.querySelectorAll('tr[data-subject-id]').forEach(row=>{
+    let subjectName = row.querySelector('.subject')?.textContent.trim()
+    let mawadVal = row.querySelector('.mawad-input')?.value.trim()
+    if(subjectName && mawadVal){
+      subjectMawadMap[subjectName] = mawadVal
+    }
+  })
+
+  document.querySelectorAll('.container').forEach(container=>{
+    container.querySelectorAll('tr[data-subject-id]').forEach(row=>{
+      let subjectName = row.querySelector('.subject')?.textContent.trim()
+      let input = row.querySelector('.mawad-input')
+      if(subjectName && input && subjectMawadMap[subjectName]){
+        input.value = subjectMawadMap[subjectName]
+      }
+    })
+  })
+  alert('مواد copied to all students by subject! Now click Save All')
+}
+
+async function saveAllMarks(){
+  let cls = clsSelect.value
+  let termVal = term.value
+  let sessionVal = session.value.trim()
+
+  // Save global fields to localStorage
+  let globalKey = `report_global_${cls}_${termVal}_${sessionVal}`
+  let daysOpened = document.querySelector('.days-opened')?.value.trim()
+  let termBegan = document.querySelector('.term-began')?.value.trim()
+  let termEnded = document.querySelector('.term-ended')?.value.trim()
+  let nextTerm = document.querySelector('.next-term')?.value.trim()
+
+  localStorage.setItem(globalKey, JSON.stringify({
+    daysOpened: daysOpened,
+    termBegan: termBegan,
+    termEnded: termEnded,
+    nextTerm: nextTerm
+  }))
+
+  let updates = []
+  let commentUpdates = []
+
+  document.querySelectorAll('.container').forEach(container=>{
+    let studentId = container.querySelector('tr[data-student-id]')?.dataset.studentId
+    let daysPresent = container.querySelector('.days-present-input')?.value.trim()
+    let teacherComment = container.querySelector('.teacher-comment')?.value.trim()
+    let headmasterComment = container.querySelector('.headmaster-comment')?.value.trim()
+
+    if(studentId){
+      commentUpdates.push({
+        student_id: studentId,
+        class_name: cls,
+        term: termVal,
+        session: sessionVal,
+        attendance: parseInt(daysPresent) || 0,
+        teacher_comment: teacherComment,
+        headmaster_comment: headmasterComment
+      })
+    }
+
+    container.querySelectorAll('tr[data-student-id]').forEach(row=>{
+      let subjectId = row.dataset.subjectId
+      let mawad = row.querySelector('.mawad-input').value.trim()
+      if(studentId && subjectId && subjectId!== 'null'){
+        updates.push({
+          student_id: studentId,
+          class: cls,
+          subject_id: subjectId,
+          term: termVal,
+          session: sessionVal,
+          mawad: mawad
+        })
+      }
+    })
+  })
+
+  if(updates.length>0){
+    await db.from('marks').upsert(updates, {onConflict: 'student_id,subject_id,class,term,session'})
+  }
+  if(commentUpdates.length>0){
+    await db.from('report_comments').upsert(commentUpdates, {onConflict: 'student_id,class_name,term,session'})
+  }
+  alert('All saved to database! ✅')
+}
+
+function uploadSignature(input, type){
+  const file = input.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = ev => {
+      let cls = clsSelect.value
+      let termVal = term.value
+      let sessionVal = session.value
+      let sigKey = `sig_${type}_${cls}_${termVal}_${sessionVal}`
+      localStorage.setItem(sigKey, ev.target.result)
+      loadClassReports()
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeSignature(type){
+  let cls = clsSelect.value
+  let termVal = term.value
+  let sessionVal = session.value
+  let sigKey = `sig_${type}_${cls}_${termVal}_${sessionVal}`
+  localStorage.removeItem(sigKey)
+  loadClassReports()
+}
+
+async function loadClassReports(){
+  let cls = clsSelect.value
+  let termVal = term.value
+  let sessionVal = session.value.trim()
+
+  if(cls=='Select Class'){alert('Select Class first'); return}
+
+  let {data: students} = await db.from('students').select('*').eq('class', cls).order('name')
+  if(!students || students.length==0){alert('No students in this class'); return}
+
+  let globalKey = `report_global_${cls}_${termVal}_${sessionVal}`
+  let globalData = JSON.parse(localStorage.getItem(globalKey) || '{}')
+
+  let headSig = localStorage.getItem(`sig_headmaster_${cls}_${termVal}_${sessionVal}`) || ''
+  let teacherSig = localStorage.getItem(`sig_teacher_${cls}_${termVal}_${sessionVal}`) || ''
+
+  let {data: dbComments} = await db.from('report_comments')
+.select('student_id, teacher_comment, attendance, headmaster_comment')
+.eq('class_name', cls)
+.eq('term', termVal)
+.eq('session', sessionVal)
+
+  let commentMap = {}
+  dbComments?.forEach(c=> commentMap[c.student_id] = c)
+
+  let studentTotals = []
+  for(let stud of students){
+    let {data: marks} = await db.from('marks').select('ca1, ca2, exam').eq('student_id', stud.id).eq('class', cls).eq('term', termVal).eq('session', sessionVal)
+    let totalMarks = 0
+    marks?.forEach(m=> totalMarks += (m.ca1||0) + (m.ca2||0) + (m.exam||0))
+    studentTotals.push({id: stud.id, name: stud.name, total: totalMarks})
+  }
+
+  studentTotals.sort((a,b) => b.total - a.total)
+  let currentPos = 1
+  for(let i=0; i<studentTotals.length; i++){
+    if(i>0 && studentTotals[i].total < studentTotals[i-1].total){
+      currentPos = i + 1
+    }
+    studentTotals[i].reportPos = currentPos
+  }
+
+  let classAvg = studentTotals.length>0? (studentTotals.reduce((sum,s)=>sum+s.total,0)/studentTotals.length).toFixed(1) : 0
+
+  let subjectPositions = {}
+  for(let stud of students){
+    let {data: marks} = await db.from('marks').select('subject_id, ca1, ca2, exam').eq('student_id', stud.id).eq('class', cls).eq('term', termVal).eq('session', sessionVal)
+    marks?.forEach(m=>{
+      let subjId = m.subject_id
+      let subjTotal = (m.ca1||0) + (m.ca2||0) + (m.exam||0)
+      if(!subjectPositions[subjId]) subjectPositions[subjId] = []
+      subjectPositions[subjId].push({student_id: stud.id, total: subjTotal})
+    })
+  }
+
+  Object.keys(subjectPositions).forEach(subjId=>{
+    subjectPositions[subjId].sort((a,b)=> b.total - a.total)
+    let pos = 1
+    for(let i=0; i<subjectPositions[subjId].length; i++){
+      if(i>0 && subjectPositions[subjId][i].total < subjectPositions[subjId][i-1].total){
+        pos = i + 1
+      }
+      subjectPositions[subjId][i].pos = pos
+    }
+  })
+
+  reportsContainer.innerHTML = ''
+
+  for(let stud of studentTotals){
+    let {data: myMarks} = await db.from('marks')
+.select('*, subjects(name)')
+.eq('student_id', stud.id)
+.eq('class', cls)
+.eq('term', termVal)
+.eq('session', sessionVal)
+.order('subject_id', {ascending: true})
+
+    if(myMarks.length==0) continue
+
+    let daysPresent = commentMap[stud.id]?.attendance || 0
+    let teacherComment = commentMap[stud.id]?.teacher_comment || ''
+    let actualTotal = myMarks.reduce((sum, m)=> sum + (m.ca1||0) + (m.ca2||0) + (m.exam||0), 0)
+    let headmasterComment = getHeadmasterComment(actualTotal)
+    let reportPosText = getPositionText(stud.reportPos)
+
+    let subjectRows = ''
+    myMarks.forEach((m, idx)=>{
+      let total = (m.ca1||0) + (m.ca2||0) + (m.exam||0)
+      let grade = getGrade(total)
+      let subjPosData = subjectPositions[m.subject_id]?.find(s=> s.student_id == stud.id)
+      let subjPosNum = subjPosData? subjPosData.pos : 0
+      let subjPosText = getPositionText(subjPosNum)
+
+      subjectRows += `
+        <tr data-student-id="${stud.id}" data-subject-id="${m.subject_id || ''}">
+          <td>${idx+1}</td>
+          <td class="subject">${m.subjects?.name || 'Subject Not Found'}</td>
+          <td><input type="text" class="editable-cell" value="${m.ca1||''}"></td>
+          <td><input type="text" class="editable-cell" value="${m.ca2||''}"></td>
+          <td><input type="text" class="editable-cell" value="${m.exam||''}"></td>
+          <td><input type="text" class="editable-cell" value="${total}"></td>
+          <td><input type="text" class="editable-cell" value="${grade}"></td>
+          <td><span style="display:block;padding:6px 4px;font-weight:bold">${subjPosText}</span></td>
+          <td><input type="text" class="editable-cell mawad-input" value="${m.mawad||''}"></td>
+        </tr>
+      `
+    })
+
+    let passFail = actualTotal >= classAvg? 'Pass' : 'Fail'
+
+    reportsContainer.innerHTML += `
+      <div class="container">
+        <div class="header">
+          <div class="left">
+            <div class="school">FEDERAL REPUBLIC OF NIGERIA<br>SAUTUL HAQQ SCHOOLS</div>
+            <div class="small">FOR QUR'AN MEMORISATION AND ISLAMIC STUDIES</div>
+            <div class="small">No:14 Third Avenue, Federal Housing Estate, R/Sambo, Sokoto Nigeria</div>
+            <div class="small">07032730077, 08163287919, 08068804147</div>
+          </div>
+          <div class="logo">
+            <img src="https://epgegesdptpaegycughz.supabase.co/storage/v1/object/public/Logos/sautul-haqq-logo.png" style="width:120px;height:120px;object-fit:contain">
+          </div>
+          <div class="right">
+            <div class="school">جمهورية نيجيريا الفدرالية<br>مدرسة صوت الحق<br>لتحفيظ القرآن والدراسات الإسلامية</div>
+          </div>
+        </div>
+
+        <div class="statement"><div>STATEMENT OF RESULT &nbsp;&nbsp;&nbsp; كشف الدرجات</div></div>
+
+        <div class="info">
+          <div class="row"><div class="field"><label>Name (اسم):</label> <input type="text" class="input-line" value="${stud.name}"></div></div>
+          <div class="row">
+            <div class="field"><label>Class (حلقة):</label> <input type="text" class="input-line" value="${cls}"></div>
+            <div class="field"><label>Position (درجة):</label>
+              <span class="position-top-input" style="display:inline-block">${reportPosText}</span>
+            </div>
+            <div class="field"><label>Out of (في):</label> <input type="text" class="input-line" value="${students.length}"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Session (العام الدراسي):</label> <input type="text" class="input-line" value="${sessionVal}"></div>
+            <div class="field"><label>Term (فترة):</label> <input type="text" class="input-line" value="${termVal}"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Days School Opened (عدد أيام الدراسة):</label> <input type="text" class="input-line days-opened" value="${globalData.daysOpened||''}"></div>
+            <div class="field"><label>Number of Days Present (عدد أيام الحضور):</label>
+              <input type="text" class="input-line days-present-input" value="${daysPresent}">
+            </div>
+          </div>
+        </div>
+
+        <table>
+        <tr>
+          <th class="sn-col">S/N</th>
+          <th class="subject-col">SUBJECTS</th>
+          <th class="ca-col">1ST CA<br>الاختبار الأول</th>
+          <th class="ca-col">2ND CA<br>الاختبار الثاني</th>
+          <th class="exam-col">EXAMS<br>الامتحان</th>
+          <th class="total-col">TOTAL<br>المجموع</th>
+          <th class="grade-col">GRADE<br>الدرجة</th>
+          <th class="pos-col">POSITION<br>التقدير</th>
+          <th class="mawad-col">المواد</th>
+        </tr>
+        ${subjectRows}
+        <tr>
+          <td colspan="2"><b>Total Marks</b></td>
+          <td colspan="5"><b>Class Average: ${classAvg}</b></td>
+          <td colspan="2"><input type="text" class="editable-cell" value="${actualTotal}" style="font-weight:bold;font-size:16px"></td>
+        </tr>
+        <tr><td colspan="9">A:70-100; B:60-69; C:50-59; D:45-49; E:40-44; F:0-39</td></tr>
+        <tr><td colspan="5"><b>(نجح/راسب) Pass/Fail</b></td><td colspan="4"><input type="text" class="editable-cell" value="${passFail}" style="font-weight:bold;"></td></tr>
+        </table>
+
+        <br>
+        <div style="display:flex; align-items:center; gap:10px; margin:10px 0;">
+          <b>Class Teacher's Comment :</b>
+          <input type="text" class="comment-line teacher-comment" value="${teacherComment}">
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin:10px 0;">
+          <b>Headmaster's Comment :</b>
+          <input type="text" class="comment-line headmaster-comment" value="${headmasterComment}">
+        </div>
+        <br>
+        <div class="row" style="justify-content:space-between;">
+          <div>Term Began: <input type="text" class="input-line term-began" style="width:160px" value="${globalData.termBegan||''}"></div>
+          <div>Ended on: <input type="text" class="input-line term-ended" style="width:160px" value="${globalData.termEnded||''}"></div>
+          <div>Next Term Begins: <input type="text" class="input-line next-term" style="width:160px" value="${globalData.nextTerm||''}"></div>
+        </div>
+
+        <div class="signatures" style="display:flex; justify-content:space-between; margin-top:40px; gap:30px;">
+          <div style="width:30%; text-align:center;">
+            <div class="sig-area">
+              ${headSig? `<img src="${headSig}" class="sig-preview">` : `<span style="color:#999;line-height:60px">Headmaster Signature</span>`}
+              <button class="remove-btn" onclick="removeSignature('headmaster')" style="display:${headSig?'block':'none'}">×</button>
+            </div>
+            <input type="file" accept="image/*" onchange="uploadSignature(this,'headmaster')">
+            <div style="border-bottom:2px solid #000; margin:8px 0;"></div>
+            <div>Headmaster's Signature</div>
+          </div>
+          <div style="width:30%; text-align:center;">
+            <div class="sig-area">
+              ${teacherSig? `<img src="${teacherSig}" class="sig-preview">` : `<span style="color:#999;line-height:60px">Class Teacher Signature</span>`}
+              <button class="remove-btn" onclick="removeSignature('teacher')" style="display:${teacherSig?'block':'none'}">×</button>
+            </div>
+            <input type="file" accept="image/*" onchange="uploadSignature(this,'teacher')">
+            <div style="border-bottom:2px solid #000; margin:8px 0;"></div>
+            <div>Class Teacher's Signature</div>
+          </div>
+        </div>
+      </div>
+    `
+  }
+}
+</script>
+</body>
+</html>
