@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Teacher Portal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
   body{font-family:Arial,sans-serif;background:#f0f4f8;padding:20px;margin:0}
   .box{background:#fff;padding:25px;border-radius:8px;max-width:500px;margin:50px auto;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
@@ -33,16 +34,29 @@
     <h2>Welcome <span id="teacherName"></span></h2>
     <div class="info">You can access all classes and subjects. Select the class + subject you teach in the mark sheet.</div>
   </div>
-  <button onclick="window.location.href='marksheet.html'">Enter/Edit Marks</button>
-  <button onclick="window.location.href='viewmarks.html'" style="background:#16a34a">View Saved Marks</button>
-  <button class="btn-purple" onclick="window.location.href='teacher_comment.html'">Teacher Comment & Attendance</button>
-  <button onclick="window.location.href='report.html'" style="background:purple;color:white;padding:12px;border:none;border-radius:8px;width:100%;margin:8px 0;font-size:16px;font-weight:bold;cursor:pointer">
-  Class Report Sheet
+  <button onclick="window.location.href='marksheet.html'">
+  <i class="fa-solid fa-pen-to-square"></i> Enter/Edit Marks
 </button>
-  <button onclick="window.location.href='viewstudents.html'">View Students List</button>
-  <button class="btn btn-info" onclick="window.location.href='class_subject.html'">
-    📚 Class Subjects
-  </button>
+
+<button onclick="window.location.href='viewmarks.html'" style="background:#16a34a">
+  <i class="fa-solid fa-eye"></i> View Saved Marks
+</button>
+
+<button class="btn-purple" onclick="window.location.href='teacher_comment.html'">
+  <i class="fa-solid fa-clipboard-user"></i> Teacher Comment & Attendance
+</button>
+
+<button onclick="window.location.href='report.html'" style="background:purple;color:white;padding:12px;border:none;border-radius:8px;width:100%;margin:8px 0;font-size:16px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+  <i class="fa-solid fa-file-lines"></i> Class Report Sheet
+</button>
+
+<button class="btn btn-blue" onclick="window.location.href='viewstudents.html'">
+  <i class="fa-solid fa-users"></i> View Students List
+</button>
+
+<button class="btn btn-info" onclick="window.location.href='class_subject.html'">
+  <i class="fa-solid fa-book"></i> Class Subjects
+</button>
   <button onclick="logout()" style="background:#dc2626">Logout</button>
 </div>
 
