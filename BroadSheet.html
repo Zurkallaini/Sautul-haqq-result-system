@@ -207,9 +207,15 @@ position:0
 }
 
 broadData.sort((a,b)=>b.total-a.total);
-broadData.forEach((item,index)=>{
-item.position=index+1;
-});
+
+// Competition ranking: handles ties like 1st, 1st, 3rd
+let currentRank = 1;
+for(let i = 0; i < broadData.length; i++){
+    if(i > 0 && broadData[i].total < broadData[i-1].total){
+        currentRank = i + 1;
+    }
+    broadData[i].position = currentRank;
+}
 
 const highestScore=broadData.length
 ? broadData[0].total
