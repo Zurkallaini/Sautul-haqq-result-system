@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAUTUL HAQQ BROAD SHEET</title>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+body{background:#eef2f7;padding:20px}
+.container{background:#fff;border-radius:15px;padding:20px;box-shadow:0 5px 20px rgba(0,0,0,.1)}
+.header{background:linear-gradient(135deg,#0d47a1,#1565c0);color:#fff;padding:20px;border-radius:12px;margin-bottom:20px;text-align:center}
+.header h1{font-size:32px;font-weight:700}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.controls select,.controls button{padding:12px;border:none;border-radius:8px;font-size:15px}
+.controls select{background:#f5f5f5;min-width:180px}
+.controls button{background:#0d47a1;color:#fff;cursor:pointer;font-weight:600}
+.controls button:hover{background:#1565c0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:20px}
+.card{background:#fff;border-left:5px solid #0d47a1;border-radius:12px;padding:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.card h4{font-size:14px;color:#666;margin-bottom:5px}
+.card h2{color:#0d47a1;font-size:24px}
+.table-container{overflow:auto;border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:1200px}
+th{background:#0d47a1;color:#fff;padding:10px;border:1px solid #ddd;position:sticky;top:0}
+td{padding:8px;border:1px solid #ddd;text-align:center}
+tr:nth-child(even){background:#f8fafc}
+.student-name{text-align:left;font-weight:600}
+.footer{margin-top:20px;background:#f8fafc;padding:15px;border-radius:10px;display:flex;justify-content:space-between;flex-wrap:wrap}
+@media print{.controls{display:none}body{background:#fff;padding:0}.container{box-shadow:none}}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="header">
+<h1>SAUTUL HAQQ BROAD SHEET</h1>
+<p>Academic Performance Summary</p>
+</div>
+
+<div class="controls">
+<select id="classSelect"><option value="">Select Class</option></select>
+
+<select id="termSelect">
+<option value="">Select Term</option>
+<option>1st Term</option>
+<option>2nd Term</option>
+<option>3rd Term</option>
+</select>
+
+<select id="sessionSelect">
+<option value="">Select Session</option>
+<option>2025/2026</option>
+<option>2026/2027</option>
+</select>
+
+<button onclick="generateBroadSheet()">Generate</button>
+<button onclick="window.print()">Print</button>
+</div>
+
+<div class="stats">
+<div class="card"><h4>Total Students</h4><h2 id="studentCount">0</h2></div>
+<div class="card"><h4>Total Subjects</h4><h2 id="subjectCount">0</h2></div>
+<div class="card"><h4>Class Average</h4><h2 id="classAverage">0</h2></div>
+<div class="card"><h4>Highest Score</h4><h2 id="highestScore">0</h2></div>
+</div>
+
+<div class="table-container">
+<table>
+<thead>
+<tr id="subjectHeader">
+<th>S/N</th>
+<th>STUDENT NAME</th>
+</tr>
+</thead>
+<tbody id="broadsheetBody"></tbody>
+</table>
+</div>
+
+<div class="footer">
+<div>Class Average: <strong id="footerAverage">0</strong></div>
+<div>Class Teacher: __________________</div>
+<div>Principal: __________________</div>
+</div>
+
+</div>
+
+<script>
+const SUPABASE_URL="https://epgegesdptpaegycughz.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2VnZXNkcHRwYWVneWN1Z2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Mjk4NzcsImV4cCI6MjA5NzMwNTg3N30.9eK3TvMP5Ve_ZMQlGV12aSpT84CMxDUJTk_fnHCSBfQ";
+
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+function formatPosition(n){
+if(n%100>=11 && n%100<=13) return `${n}<sup>th</sup>`;
+switch(n%10){
+case 1:return `${n}<sup>st</sup>`;
+case 2:return `${n}<sup>nd</sup>`;
+case 3:return `${n}<sup>rd</sup>`;
+default:return `${n}<sup>th</sup>`;
+}
+}
+
+loadClasses();
+
+async function loadClasses(){
+const select=document.getElementById("classSelect");
+const {data,error}=await db.from("classes").select("*").order("name");
+
+if(error){
+console.error(error);
+return;
+}
+
+data.forEach(cls=>{
+select.innerHTML+=`<option value="${cls.name}">${cls.name}</option>`;
+});
+}
+
+async function generateBroadSheet(){
+
+const className=document.getElementById("classSelect").value;
+const term=document.getElementById("termSelect").value;
+const session=document.getElementById("sessionSelect").value;
+
+if(!className||!term||!session){
+alert("Please Select Class, Term and Session");
+return;
+}
+
+const header=document.getElementById("subjectHeader");
+const body=document.getElementById("broadsheetBody");
+
+header.innerHTML="<th>S/N</th><th>STUDENT NAME</th>";
+body.innerHTML="<tr><td colspan='20'>Loading...</td></tr>";
+
+const {data:classSubjects}=await db
+.from("class_subjects")
+.select("subject_id, subjects(name)")
+.eq("class_name",className);
+
+const subjects=classSubjects.map(cs=>({
+id:cs.subject_id,
+name:cs.subjects.name
+}));
+
+subjects.forEach(s=>{
+header.innerHTML+=`<th>${s.name.toUpperCase()}</th>`;
+});
+
+header.innerHTML+=`<th>TOTAL</th><th>POSITION</th>`;
+document.getElementById("subjectCount").textContent=subjects.length;
+const {data:students}=await db
+.from("students")
+.select("*")
+.eq("class",className)
+.order("name");
+
+document.getElementById("studentCount").textContent=students.length;
+
+if(students.length===0){
+body.innerHTML=`<tr><td colspan="${subjects.length+4}">No students found for ${className}</td></tr>`;
+return;
+}
+
+const studentIds=students.map(s=>s.id);
+const subjectIds=subjects.map(s=>s.id);
+
+const {data:allMarks}=await db
+.from("marks")
+.select("*")
+.in("student_id",studentIds)
+.in("subject_id",subjectIds)
+.eq("class",className)
+.eq("term",term)
+.eq("session",session);
+
+let broadData=[];
+
+for(const student of students){
+
+let studentMarks=[];
+let grandTotal=0;
+
+for(const subject of subjects){
+
+const mark=allMarks.find(
+m=>m.student_id===student.id &&
+m.subject_id===subject.id
+);
+
+const score=mark ? Number(mark.total) : 0;
+
+studentMarks.push(score);
+grandTotal+=score;
+}
+
+broadData.push({
+student,
+marks:studentMarks,
+total:grandTotal,
+position:0
+});
+}
+
+broadData.sort((a,b)=>b.total-a.total);
+broadData.forEach((item,index)=>{
+item.position=index+1;
+});
+
+const highestScore=broadData.length
+? broadData[0].total
+: 0;
+
+const classAverage=students.length
+? (broadData.reduce((a,b)=>a+b.total,0)/students.length).toFixed(2)
+: 0;
+
+document.getElementById("highestScore").textContent=highestScore;
+document.getElementById("classAverage").textContent=classAverage;
+document.getElementById("footerAverage").textContent=classAverage;
+
+body.innerHTML="";
+
+broadData.forEach((item,index)=>{
+
+let row=`<tr>
+<td>${index+1}</td>
+<td class="student-name">${item.student.name}</td>`;
+
+item.marks.forEach(score=>{
+row+=`<td>${score}</td>`;
+});
+
+row+=`
+<td><b>${item.total}</b></td>
+<td><b>${formatPosition(item.position)}</b></td>
+</tr>`;
+
+body.innerHTML+=row;
+});
+
+}
+</script>
+
+</body>
+</html>
