@@ -34,7 +34,7 @@ th,td{border:2px solid #000;text-align:center;padding:6px 4px;font-size:13px;ver
 .editable-cell{border:none;background:transparent;width:100%;text-align:center;font-size:13px}
 .mawad-input {font-size: 15px!important;font-weight: 500;text-align: center;width: 100%;padding: 4px 2px;}
 .comment-line{border:none;border-bottom:2px solid #000;flex:1;padding:4px 8px;font-size:15px;background:transparent}
-.sig-area{height:60px;width:100%;border:2px dashed #aaa;margin-bottom:8px;position:relative;background:#fafafa;overflow:hidden}
+.sig-area{height:60px;width:60%;border:2px dashed #aaa;margin-bottom:8px;position:relative;background:#fafafa;overflow:hidden}
 .sig-preview{width:100%;height:100%;object-fit:fill;display:block}
 .remove-btn{position:absolute;top:2px;right:2px;background:red;color:white;border:none;font-size:10px;padding:2px 5px;cursor:pointer;z-index:10;display:none}
 @media print {.controls {display: none} body {margin: 0; padding: 0}.container{border:none;margin:0}}
@@ -100,10 +100,10 @@ function getGrade(total) {
 }
 
 function getHeadmasterComment(total) {
-  if(total >= 900) return 'Excellent performance keep it up.';
-  if(total >= 700) return 'A very good Performance keep it up.';
-  if(total >= 600) return 'Good performance put in more effort.';
-  if(total >= 500) return 'Fair performance, you need to work harder.';
+  if(total >= 700) return 'Excellent performance keep it up.';
+  if(total >= 600) return 'A very good Performance keep it up.';
+  if(total >= 500) return 'Good performance put in more effort.';
+  if(total >= 450) return 'Fair performance, you need to work harder.';
   if(total >= 400) return 'Poor performance, you need to work harder and catch up.';
   return 'Very poor performance, you need to work harder and catch up.';
 }
