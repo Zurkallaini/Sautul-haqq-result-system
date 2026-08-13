@@ -5,281 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Statement of Result - Editable</title>
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
+<style>
+body{font-family: Arial, sans-serif;background:#fff;margin:20px;padding:20px}
+.container{width:1000px;margin:auto;border:1px solid #ddd;padding:20px;background:white;margin-bottom:30px;page-break-after:always}
+.header{display:grid;grid-template-columns: 1fr 180px 1fr;align-items:center;margin-bottom:15px}
+.left,.right{text-align:center}
+.right { direction:rtl; }
+.school{font-size:24px;font-weight:bold;line-height:1.5} /* was 18px */
+.small{font-size:16px} /* was 12px */
+.statement{display:flex;justify-content:center;margin:20px 0}
+.statement div{background:#d9ebff;padding:10px 40px;font-weight:bold;border:1px solid #6c8ebf;font-size:24px} /* was 18px */
+.controls{position: fixed;top: 0;left: 0;right: 0;background: #2563eb;padding: 10px;display: flex;gap: 8px;flex-wrap: wrap;z-index: 1000;box-shadow: 0 2px 5px rgba(0,0,0,0.2)}
+.controls select,.controls input,.controls button{padding: 8px 12px;border: none;border-radius: 5px;font-size: 14px}
+.controls button{background: #fff;color: #2563eb;font-weight: bold;cursor: pointer}
+.info{margin-top:20px;font-size:18px} /* ADDED */
+.row{display:flex;flex-wrap: wrap;gap:18px;margin:12px 0;align-items: center}
+.field{display:flex;align-items:center;flex:1;min-width:300px}
+.field label{white-space: nowrap;margin-right:10px;font-weight:600;font-size:18px} /* was 15px */
+.input-line{border:none;border-bottom:2px solid #000;flex:1;padding:5px 6px;font-size:18px;background:transparent} /* was 15px */
+.input-line:focus{outline:none;border-bottom:2px solid #0066cc;background:#f8fbff}
+.position-top-input{border:none;border-bottom:2px solid #000;background:transparent;width:160px;text-align:center;font-size:22px;font-weight:bold;color:#d32f2f} /* was 19px */
+.days-present-input {max-width: 140px!important;flex: none!important;}
+
+table{width:100%;border-collapse:collapse;margin-top:20px}
+th,td{border:2px solid #000;text-align:center;padding:10px 5px;font-size:20px;vertical-align: middle} /* was 18px/6px */
+th{background:#f2f2f2;font-weight:bold;font-size:21px} /* ADDED - table header bigger */
+.sn-col { width: 45px; } /* was 35px */
+.subject-col { width: 200px; } /* was 170px */
+.ca-col,.exam-col,.total-col,.grade-col,.pos-col { width: 65px; } /* was 52px */
+.mawad-col { width: 130px; } /* was 110px */
+.editable-cell{border:none;background:transparent;width:100%;text-align:center;font-size:20px} /* was 18px */
+.mawad-input {font-size: 18px!important;font-weight: 600;text-align: center;width: 100%;padding: 5px 2px;} /* was 16px */
+.comment-line{border:none;border-bottom:2px solid #000;flex:1;padding:6px 8px;font-size:20px;background:transparent} /* was 20px */
+
+.sig-area{height:80px;width:65%;border:2px dashed #aaa;margin-bottom:10px;position:relative;background:#fafafa;overflow:hidden} /* was 60px */
+.sig-preview{width:100%;height:100%;object-fit:fill;display:block}
+.remove-btn{position:absolute;top:2px;right:2px;background:red;color:white;border:none;font-size:12px;padding:3px 6px;cursor:pointer;z-index:10;display:none} /* was 10px */
+
+/* PRINT SPECIFIC - make it even bigger when printing */
+@media print {
+  .controls {display: none} 
+  body {margin: 0; padding: 10px; font-size: 16pt} /* base print size */
+  .container{border:none;margin:0;width:100%}
+  .school{font-size:26pt}
+  .statement div{font-size:22pt}
+  .field label, .info{font-size:14pt}
+  .input-line{font-size:14pt}
+  th{font-size:14pt}
+  td{font-size:14pt;padding:8px 4px}
+  .editable-cell{font-size:14pt}
 }
 
-body{
-font-family:Arial,sans-serif;
-background:#fff;
-margin:20px;
-padding:20px;
-font-size:20px;
-}
+/* Superscript for ST, ND, RD, TH */
+.sup {font-size: 0.7em; vertical-align: super; line-height: 0.8em;}
+</style>
 
-.container{
-width:1000px;
-margin:auto;
-border:1px solid #ddd;
-padding:20px;
-background:#fff;
-margin-bottom:30px;
-page-break-after:always;
-}
-
-.header{
-display:grid;
-grid-template-columns:1fr 180px 1fr;
-align-items:center;
-margin-bottom:10px;
-}
-
-.left,.right{
-text-align:center;
-}
-
-.right{
-direction:rtl;
-}
-
-.school{
-font-size:24px;
-font-weight:bold;
-line-height:1.5;
-}
-
-.small{
-font-size:14px;
-}
-
-.statement{
-display:flex;
-justify-content:center;
-margin:15px 0;
-}
-
-.statement div{
-background:#d9ebff;
-padding:10px 35px;
-font-weight:bold;
-border:1px solid #6c8ebf;
-font-size:24px;
-}
-
-.controls{
-position:fixed;
-top:0;
-left:0;
-right:0;
-background:#2563eb;
-padding:10px;
-display:flex;
-gap:8px;
-flex-wrap:wrap;
-z-index:1000;
-box-shadow:0 2px 5px rgba(0,0,0,.2);
-}
-
-.controls select,
-.controls input,
-.controls button{
-padding:8px 12px;
-border:none;
-border-radius:5px;
-font-size:14px;
-}
-
-.controls button{
-background:#fff;
-color:#2563eb;
-font-weight:bold;
-cursor:pointer;
-}
-
-.info{
-margin-top:15px;
-}
-
-.row{
-display:flex;
-flex-wrap:wrap;
-gap:15px;
-margin:10px 0;
-align-items:center;
-}
-
-.field{
-display:flex;
-align-items:center;
-flex:1;
-min-width:280px;
-}
-
-.field label{
-white-space:nowrap;
-margin-right:8px;
-font-weight:600;
-font-size:18px;
-}
-
-.input-line{
-border:none;
-border-bottom:2px solid #000;
-flex:1;
-padding:4px 6px;
-font-size:18px;
-background:transparent;
-}
-
-.input-line:focus{
-outline:none;
-border-bottom:2px solid #0066cc;
-background:#f8fbff;
-}
-
-.position-top-input{
-border:none;
-border-bottom:2px solid #000;
-background:transparent;
-width:140px;
-text-align:center;
-font-size:24px;
-font-weight:bold;
-color:#d32f2f;
-}
-
-.days-present-input{
-max-width:120px!important;
-flex:none!important;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:15px;
-}
-
-th{
-border:2px solid #000;
-text-align:center;
-padding:8px 4px;
-font-size:20px;
-font-weight:bold;
-vertical-align:middle;
-}
-
-td{
-border:2px solid #000;
-text-align:center;
-padding:8px 4px;
-font-size:19px;
-vertical-align:middle;
-}
-
-.sn-col{
-width:40px;
-}
-
-.subject-col{
-width:180px;
-}
-
-.ca-col,
-.exam-col,
-.total-col,
-.grade-col,
-.pos-col{
-width:65px;
-}
-
-.mawad-col{
-width:120px;
-}
-
-.editable-cell{
-border:none;
-background:transparent;
-width:100%;
-text-align:center;
-font-size:19px;
-font-weight:500;
-}
-
-.mawad-input{
-font-size:18px!important;
-font-weight:500;
-text-align:center;
-width:100%;
-padding:4px 2px;
-}
-
-.comment-line{
-border:none;
-border-bottom:2px solid #000;
-flex:1;
-padding:4px 8px;
-font-size:20px;
-background:transparent;
-}
-
-.sig-area{
-height:90px;
-width:70%;
-border:2px dashed #aaa;
-margin-bottom:8px;
-position:relative;
-background:#fafafa;
-overflow:hidden;
-}
-
-.sig-preview{
-width:100%;
-height:100%;
-object-fit:fill;
-display:block;
-}
-
-.remove-btn{
-position:absolute;
-top:2px;
-right:2px;
-background:red;
-color:#fff;
-border:none;
-font-size:10px;
-padding:2px 5px;
-cursor:pointer;
-z-index:10;
-display:none;
-}
-
-.sup{
-font-size:.7em;
-vertical-align:super;
-line-height:.8em;
-}
-
-@media print{
-.controls{
-display:none;
-}
-
-body{
-margin:0;
-padding:0;
-zoom:110%;
-}
-
-.container{
-border:none;
-margin:0;
-width:100%;
-padding:10px;
-}
-}
-  </style>
 </head>
 <body>
 <div class="controls no-print">
