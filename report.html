@@ -400,17 +400,21 @@ async function saveAllMarks(){
 
   // Save global fields to localStorage
   let globalKey = `report_global_${cls}_${termVal}_${sessionVal}`
-  let daysOpened = document.querySelector('.days-opened')?.value.trim()
-  let termBegan = document.querySelector('.term-began')?.value.trim()
-  let termEnded = document.querySelector('.term-ended')?.value.trim()
-  let nextTerm = document.querySelector('.next-term')?.value.trim()
+  let daysOpened = document.querySelector('.days-opened')?.value.trim() || ''
+  let termBegan = document.querySelector('.term-began')?.value.trim() || ''
+  let termEnded = document.querySelector('.term-ended')?.value.trim() || ''
+  let nextTerm = document.querySelector('.next-term')?.value.trim() || ''
 
-  localStorage.setItem(globalKey, JSON.stringify({
-    daysOpened: daysOpened,
-    termBegan: termBegan,
-    termEnded: termEnded,
-    nextTerm: nextTerm
-  }))
+  // Save to Supabase so everyone can see it
+  await db.from('term_settings').upsert({
+    class_name: cls,
+    term: termVal,
+    session: sessionVal,
+    days_opened: daysOpened,
+    term_began: termBegan,
+    term_ended: termEnded,
+    next_term: nextTerm
+  }, {onConflict: 'class_name,term,session'})
 
   let updates = []
   let commentUpdates = []
@@ -458,31 +462,43 @@ async function saveAllMarks(){
   alert('All saved to database! ✅')
 }
 
-function uploadSignature(input, type){
+async function uploadSignature(input, type){
   const file = input.files[0];
-  if(file){
-    const reader = new FileReader();
-    reader.onload = ev => {
-      let cls = clsSelect.value
-      let termVal = term.value
-      let sessionVal = session.value
-      let sigKey = `sig_${type}_${cls}_${termVal}_${sessionVal}`
-      localStorage.setItem(sigKey, ev.target.result)
-      loadClassReports()
-    };
-    reader.readAsDataURL(file);
-  }
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    let cls = clsSelect.value
+    let termVal = term.value
+    let sessionVal = session.value
+    let sigKey = type === 'headmaster'? 'headmaster_sig' : 'teacher_sig'
+
+    await db.from('term_settings').upsert({
+      class_name: cls,
+      term: termVal,
+      session: sessionVal,
+      [sigKey]: e.target.result
+    }, {onConflict: 'class_name,term,session'})
+
+    loadClassReports()
+  };
+  reader.readAsDataURL(file);
 }
 
-function removeSignature(type){
+async function removeSignature(type){
   let cls = clsSelect.value
   let termVal = term.value
   let sessionVal = session.value
-  let sigKey = `sig_${type}_${cls}_${termVal}_${sessionVal}`
-  localStorage.removeItem(sigKey)
-  loadClassReports()
-}
+  let sigKey = type === 'headmaster'? 'headmaster_sig' : 'teacher_sig'
 
+  await db.from('term_settings').upsert({
+    class_name: cls,
+    term: termVal,
+    session: sessionVal,
+    [sigKey]: null
+  }, {onConflict: 'class_name,term,session'})
+
+  loadClassReports()
+    }
 async function loadClassReports(){
   let cls = clsSelect.value
   let termVal = term.value
@@ -494,11 +510,21 @@ async function loadClassReports(){
   if(!students || students.length==0){alert('No students in this class'); return}
 
   let globalKey = `report_global_${cls}_${termVal}_${sessionVal}`
-  let globalData = JSON.parse(localStorage.getItem(globalKey) || '{}')
+    let {data: settings} = await db.from('term_settings')
+   .select('*')
+   .eq('class_name', cls)
+   .eq('term', termVal)
+   .eq('session', sessionVal)
+   .maybeSingle()
 
-  let headSig = localStorage.getItem(`sig_headmaster_${cls}_${termVal}_${sessionVal}`) || ''
-  let teacherSig = localStorage.getItem(`sig_teacher_${cls}_${termVal}_${sessionVal}`) || ''
-
+  let globalData = {
+    daysOpened: settings?.days_opened || '',
+    termBegan: settings?.term_began || '',
+    termEnded: settings?.term_ended || '',
+    nextTerm: settings?.next_term || ''
+  }
+  let headSig = settings?.headmaster_sig || ""
+  let teacherSig = settings?.teacher_sig || ""
   let {data: dbComments} = await db.from('report_comments')
 .select('student_id, teacher_comment, attendance, headmaster_comment')
 .eq('class_name', cls)
