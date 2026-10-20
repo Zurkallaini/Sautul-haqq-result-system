@@ -5,52 +5,327 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Teacher Comment & Attendance</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-body{font-family:Arial;background:#f5f5f5;padding:15px;margin:0}
-.box{background:#fff;padding:20px;border-radius:8px;max-width:1300px;margin:20px auto;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
-h2{color:#2563eb;text-align:center;margin-bottom:20px}
-select,input{padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:5px;font-size:14px}
-select{width:300px}
-label{font-weight:bold;display:block;margin-top:10px}
-table{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px}
-th{background:#2563eb;color:#fff;padding:10px;border:1px solid #ddd;position:sticky;top:0}
-td{border:1px solid #ddd;padding:8px;text-align:center}
-td:nth-child(2){text-align:left}
-.comment-input{width:98%;padding:8px;border:1px solid #ccc;font-size:14px;min-height:35px}
-.att-input{width:80px;padding:8px;border:1px solid #ccc;font-size:14px}
-.btn-save-all{background:#16a34a;color:#fff;border:none;padding:12px 25px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:16px;margin-top:15px}
-.btn-save-all:hover{background:#15803d}
-.btn-save-all:disabled{background:#9ca3af;cursor:not-allowed}
-.table-wrap{overflow-x:auto;max-height:70vh;overflow-y:auto}
-.btn-back{background:#6b7280;color:#fff;border:none;padding:10px 15px;border-radius:5px;cursor:pointer;margin-bottom:15px}
-.topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
-.msg{margin-top:10px;font-weight:bold}
-.success{color:green}
-.error{color:red}
+:root {
+    --green: #0b3d33;
+    --green-2: #11594a;
+    --gold: #c9a24b;
+    --gold-soft: #e6d3a0;
+    --paper: #f3f0e6;
+    --line: #cfc9b6;
+    --ink: #1d2a27;
+    --muted: #5a6b66;
+    --logo-size: 100px; /* 👈 change to make the header logo bigger or smaller */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: "Cairo", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+}
+
+/* ---------- Header ---------- */
+.top-bar {
+    background: var(--green);
+    border-bottom: 4px solid var(--gold);
+    padding: 24px 20px;
+}
+
+.top-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo {
+    width: var(--logo-size);
+    height: var(--logo-size);
+    flex: none;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.logo-fallback {
+    display: none;
+    width: var(--logo-size);
+    height: var(--logo-size);
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    border: 2px dashed var(--gold);
+    color: var(--gold-soft);
+    font-family: "Amiri", serif;
+    font-size: 1.8rem;
+}
+
+.school-ar {
+    font-family: "Amiri", serif;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    color: var(--gold-soft);
+}
+
+.top-bar h1 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* ---------- Card ---------- */
+.box {
+    background: #fff;
+    border: 1px solid #e2dcc9;
+    border-radius: 14px;
+    padding: 20px;
+    max-width: 1300px;
+    margin: 20px 16px;
+}
+
+@media (min-width: 1340px) {
+    .box { margin: 24px auto; padding: 24px; }
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--green);
+}
+
+.btn-back {
+    height: 42px;
+    padding: 0 16px;
+    font: inherit;
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--green);
+    background: #fff;
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.btn-back:hover { background: #faf5e6; }
+
+/* ---------- Filters ---------- */
+.filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    max-width: 760px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+select, input {
+    font: inherit;
+    font-size: 1rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+}
+
+select, #session {
+    width: 100%;
+    height: 48px;
+    padding: 0 12px;
+}
+
+select:focus, input:focus {
+    outline: none;
+    border-color: var(--green-2);
+    box-shadow: 0 0 0 3px rgba(17,89,74,.18);
+}
+
+/* ---------- Table ---------- */
+.table-wrap {
+    margin-top: 20px;
+    overflow-x: auto;
+    max-height: 70vh;
+    overflow-y: auto;
+    border: 1px solid #e2dcc9;
+    border-radius: 10px;
+}
+
+.table-wrap:has(table[style*="none"]) { display: none; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .95rem;
+}
+
+th {
+    position: sticky;
+    top: 0;
+    padding: 12px 10px;
+    font-weight: 600;
+    color: var(--gold-soft);
+    background: var(--green);
+}
+
+td {
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid #ebe6d5;
+}
+
+td:nth-child(2) { text-align: left; font-weight: 600; }
+
+tbody tr:nth-child(even) { background: #faf8f2; }
+
+.comment-input {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    font-size: .95rem;
+}
+
+.att-input {
+    width: 90px;
+    height: 42px;
+    padding: 0 10px;
+    font-size: .95rem;
+    text-align: center;
+}
+
+/* ---------- Save button ---------- */
+.btn-save-all {
+    height: 52px;
+    margin-top: 18px;
+    padding: 0 28px;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--green-2);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s, transform .05s;
+}
+
+.btn-save-all:hover { background: var(--green); }
+.btn-save-all:active { transform: translateY(1px); }
+.btn-save-all:disabled { background: #9ca3af; cursor: not-allowed; }
+.btn-save-all:focus-visible, .btn-back:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* ---------- Messages ---------- */
+.msg { margin-top: 14px; font-weight: 700; }
+.success { color: #1b7a4b; }
+.error { color: #b3261e; }
+
+/* ---------- Phones: each student becomes a small card ---------- */
+@media (max-width: 700px) {
+    .box { padding: 16px; margin: 16px 12px; }
+    .btn-back { width: 100%; }
+    .filters { grid-template-columns: 1fr; }
+    .btn-save-all { width: 100%; }
+
+    thead { display: none; }
+    table, tbody { display: block; }
+
+    tr {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 8px 10px;
+        align-items: center;
+        padding: 14px 12px;
+        border-bottom: 1px solid #ebe6d5;
+    }
+
+    td { padding: 0; border: none; }
+    td:nth-child(1) { font-weight: 700; color: var(--green); }
+    td:nth-child(3) { grid-column: 1 / -1; }
+    td:nth-child(4) {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-align: left;
+    }
+    td:nth-child(4)::before {
+        content: "Attendance %";
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--muted);
+    }
+}
 </style>
 </head>
 <body>
 
+<header class="top-bar">
+    <div class="top-inner">
+        <!-- 👇 PUT YOUR LOGO HERE: change the src to your file path or link -->
+        <img
+            class="logo"
+            src="my-logo.png"
+            alt="School logo"
+            onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='grid';"
+        >
+        <div class="logo-fallback" id="logoFallback">ص</div>
+
+        <div>
+          <div class="school-ar" dir="rtl"><center>  مدرسة صوت الحق
+            </center>
+              <br>
+          <h6>قسم تحفيظ القرءآن والدراسات اللإسلامية </h6></div>
+            <h1>Comments &amp; Attendance</h1>
+        </div>
+    </div>
+</header>
+
 <div class="box">
 <div class="topbar">
-<h2>Teacher Comment & Attendance - All Students</h2>
+<h2>Teacher Comment &amp; Attendance - All Students</h2>
 <button class="btn-back" onclick="window.location.href='teacher.html'">← Back to Teacher Portal</button>
 </div>
 
-<label>Select Class:</label>
+<div class="filters">
+<div>
+<label for="classSelect">Select Class:</label>
 <select id="classSelect" onchange="loadStudents()">
 <option value="">Select Class</option>
 </select>
+</div>
 
-<label>Term:</label>
+<div>
+<label for="term">Term:</label>
 <select id="term">
 <option>1st Term</option>
 <option>2nd Term</option>
 <option>3rd Term</option>
 </select>
+</div>
 
-<label>Session:</label>
+<div>
+<label for="session">Session:</label>
 <input type="text" id="session" value="2026/2027">
+</div>
+</div>
 
 <div class="table-wrap">
 <table id="studentsTable" style="display:none">
@@ -174,4 +449,5 @@ function showMsg(text, type) {
 }
 </script>
 </body>
-</html>
+    </html>
+    
