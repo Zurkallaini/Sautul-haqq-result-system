@@ -4,50 +4,306 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>View Marks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  body{font-family:Arial,sans-serif;background:#f5f5f5;padding:10px}
-  .box{background:#fff;padding:15px;border-radius:8px;max-width:1100px;margin:auto;overflow-x:auto}
-  h2{color:#2563eb;text-align:center;margin-top:0}
-  .controls{background:#f8f9fa;padding:12px;border-radius:5px;margin-bottom:15px;display:flex;flex-wrap:wrap;gap:8px}
-  select,input{padding:8px;border:1px solid #ddd;border-radius:5px}
-  button{background:#2563eb;color:#fff;border:none;padding:10px 15px;border-radius:5px;cursor:pointer;font-weight:bold}
-  button:hover{background:#1e40af}
-  table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px}
-  th{background:#2563eb;color:#fff;padding:8px;border:1px solid #ddd}
-  td{border:1px solid #ddd;padding:6px;text-align:center}
-  td:nth-child(2){text-align:left}
-  .back{margin-bottom:10px}
-  .error{color:red;margin-top:10px}
-  .success{color:green;margin-top:10px}
-  @media print{.no-print{display:none} body{background:#fff}}
+:root {
+    --green: #0b3d33;
+    --green-2: #11594a;
+    --gold: #c9a24b;
+    --gold-soft: #e6d3a0;
+    --paper: #f3f0e6;
+    --line: #cfc9b6;
+    --ink: #1d2a27;
+    --muted: #5a6b66;
+    --logo-size: 100px; /* 👈 change to make the header logo bigger or smaller */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: "Cairo", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+}
+
+/* ---------- Header ---------- */
+.top-bar {
+    background: var(--green);
+    border-bottom: 4px solid var(--gold);
+    padding: 24px 20px;
+}
+
+.top-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo {
+    width: var(--logo-size);
+    height: var(--logo-size);
+    flex: none;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.logo-fallback {
+    display: none;
+    width: var(--logo-size);
+    height: var(--logo-size);
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    border: 2px dashed var(--gold);
+    color: var(--gold-soft);
+    font-family: "Amiri", serif;
+    font-size: 1.8rem;
+}
+
+.school-ar {
+    font-family: "Amiri", serif;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    color: var(--gold-soft);
+}
+
+.top-bar h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* ---------- Card ---------- */
+.box {
+    background: #fff;
+    border: 1px solid #e2dcc9;
+    border-radius: 14px;
+    padding: 20px;
+    max-width: 1100px;
+    margin: 20px 16px;
+}
+
+@media (min-width: 1140px) {
+    .box { margin: 24px auto; padding: 24px; }
+}
+
+.back {
+    margin-bottom: 18px;
+    padding: 0 14px;
+    height: 40px;
+    font: inherit;
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--green);
+    background: #fff;
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.back:hover { background: #faf5e6; }
+
+h2 {
+    margin-bottom: 18px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--green);
+}
+
+/* ---------- Controls ---------- */
+.controls {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+select, input {
+    font: inherit;
+    font-size: 1rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+}
+
+.controls select, .controls input {
+    width: 100%;
+    height: 48px;
+    padding: 0 12px;
+}
+
+select:focus, input:focus {
+    outline: none;
+    border-color: var(--green-2);
+    box-shadow: 0 0 0 3px rgba(17,89,74,.18);
+}
+
+button {
+    height: 48px;
+    padding: 0 20px;
+    font: inherit;
+    font-size: .95rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--green-2);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s, transform .05s;
+}
+
+button:hover { background: var(--green); }
+button:active { transform: translateY(1px); }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+button.back { height: 40px; padding: 0 14px; color: var(--green); background: #fff; border: 2px solid var(--gold); }
+button.back:hover { background: #faf5e6; }
+.btn-print { color: var(--green); background: #fff; border: 2px solid var(--gold); }
+.btn-print:hover { color: var(--green); background: #faf5e6; }
+
+/* ---------- Table ---------- */
+.table-wrap {
+    margin-top: 20px;
+    overflow-x: auto;
+    border: 1px solid #e2dcc9;
+    border-radius: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .95rem;
+}
+
+th {
+    padding: 12px 8px;
+    font-size: .8rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--gold-soft);
+    background: var(--green);
+}
+
+td {
+    padding: 8px;
+    text-align: center;
+    background: #fff;
+    border-bottom: 1px solid #ebe6d5;
+}
+
+tr:nth-child(odd) td { background: #faf8f2; }
+
+td:nth-child(2) { text-align: left; }
+td strong { color: var(--green); }
+td:last-child strong { color: #8a6a1f; }
+sup { font-size: 10px; vertical-align: super; }
+
+/* ---------- Messages ---------- */
+.error { color: #b3261e; font-weight: 700; margin-top: 14px; }
+.success { color: #1b7a4b; font-weight: 700; margin-top: 14px; }
+
+/* ---------- Phones: one compact table, S/N + Name stay fixed while scrolling ---------- */
+@media (max-width: 760px) {
+    .box { padding: 14px; margin: 16px 10px; }
+    .back { width: 100%; }
+    .controls { grid-template-columns: 1fr; }
+    .actions button { flex: 1 1 100%; }
+
+    table { font-size: .82rem; min-width: 480px; }
+    th { padding: 10px 4px; font-size: .7rem; }
+    td { padding: 8px 4px; }
+
+    th:nth-child(1), td:nth-child(1) {
+        position: sticky; left: 0; z-index: 2;
+        width: 34px; min-width: 34px;
+    }
+    th:nth-child(2), td:nth-child(2) {
+        position: sticky; left: 34px; z-index: 2;
+        min-width: 100px; max-width: 120px;
+        box-shadow: 2px 0 0 #e2dcc9;
+    }
+    th:nth-child(1), th:nth-child(2) { z-index: 3; }
+
+    td[colspan] {
+        position: static; max-width: none; box-shadow: none;
+        text-align: center; color: var(--muted);
+    }
+}
+
+/* ---------- Print ---------- */
+@media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none; }
+    body { background: #fff; }
+    .box { border: none; margin: 0; padding: 12px 0; }
+    .table-wrap { border: none; overflow: visible; }
+    table { min-width: 0; }
+}
 </style>
 </head>
 <body>
+
+<header class="top-bar">
+    <div class="top-inner">
+        <!-- 👇 PUT YOUR LOGO HERE: change the src to your file path or link -->
+        <img
+            class="logo"
+            src="my-logo.png"
+            alt="School logo"
+            onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='grid';"
+        >
+        <div class="logo-fallback" id="logoFallback">ص</div>
+
+        <div>
+            <div class="school-ar" dir="rtl"><center>  مدرسة صوت الحق
+            </center>
+              <br>
+          <h6>قسم تحفيظ القرءآن والدراسات اللإسلامية </h6></div>
+            <h1>View Marks</h1>
+        </div>
+    </div>
+</header>
+
 <div class="box">
   <button class="back no-print" onclick="window.location.href='teacher.html'">← Back to Dashboard</button>
   <h2>VIEW SAVED MARKS</h2>
   
   <div class="controls no-print">
-    <select id="clsSelect">
+    <select id="clsSelect" aria-label="Class">
       <option>Select Class</option>
     </select>
     
-    <select id="subjSelect">
+    <select id="subjSelect" aria-label="Subject">
       <option>Select Subject</option>
     </select>
     
-    <select id="term">
+    <select id="term" aria-label="Term">
       <option>1st Term</option>
       <option>2nd Term</option>
       <option>3rd Term</option>
     </select>
-  
-    <input type="text" id="session" value="2026/2027" placeholder="2026/2027" style="width:120px">
     
+    <input type="text" id="session" value="2026/2027" placeholder="2025/2026" aria-label="Session">
+  </div>
+
+  <div class="actions no-print">
     <button onclick="viewMarks()">View Marks</button>
-    <button onclick="window.print()">Print</button>
+    <button class="btn-print" onclick="window.print()">Print</button>
   </div>
   
+  <div class="table-wrap">
   <table id="marksTable">
     <tr>
       <th>S/N</th>
@@ -61,6 +317,7 @@
     </tr>
     <tr><td colspan="8">Select Class + Subject + Term + Session then click View Marks</td></tr>
   </table>
+  </div>
   
   <div id="msg"></div>
 </div>
@@ -79,6 +336,21 @@ async function loadDropdowns(){
   
   classes?.forEach(c=>{document.getElementById('clsSelect').innerHTML += `<option>${c.name}</option>`})
   subjects?.forEach(s=>{document.getElementById('subjSelect').innerHTML += `<option value="${s.id}">${s.name}</option>`})
+}
+
+// Position with ST / ND / RD / TH (handles 11th, 12th, 13th, 21st, 22nd...)
+function getPositionText(pos){
+  if(!pos || pos==0) return '-'
+  let num = parseInt(pos.toString().replace(/\D/g,''))
+  if(isNaN(num)) return '-'
+  
+  let j = num % 10, k = num % 100
+  let suffix = 'TH'
+  if(j==1 && k!=11) suffix = 'ST'
+  else if(j==2 && k!=12) suffix = 'ND'
+  else if(j==3 && k!=13) suffix = 'RD'
+  
+  return `${num}<sup>${suffix}</sup>`
 }
 
 async function viewMarks(){
@@ -138,7 +410,7 @@ async function viewMarks(){
         <td>${m.exam||0}</td>
         <td><strong>${m.total||0}</strong></td>
         <td><strong>${m.grade||'-'}</strong></td>
-        <td><strong>${m.position||'-'}</strong></td>
+        <td><strong>${getPositionText(m.position)}</strong></td>
       </tr>
     `
   })
@@ -152,4 +424,5 @@ function showMsg(text, type){
 }
 </script>
 </body>
-</html>
+  </html>
+          
