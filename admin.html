@@ -5,48 +5,228 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-body {font-family: Arial; max-width: 700px; margin: auto; padding: 15px; background: #f5f5f5;}
-h2 {border-bottom: 3px solid #007bff; padding-bottom: 5px; color: #333;}
-.box {background: white; padding: 15px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-input, select, button {width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 14px;}
-button {background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold;}
-button:hover {background: #0056b3;}
-.btn-purple {background: #8b5cf6;}
-.btn-purple:hover {background: #7c3aed;}
-.success {color: green; font-weight: bold; margin-top: 5px;}
-.error {color: red; font-weight: bold; margin-top: 5px;}
-label {font-weight: bold; margin-top: 5px; display: block;}
-small {color: #666;}
+:root {
+    --green: #0b3d33;
+    --green-2: #11594a;
+    --gold: #c9a24b;
+    --gold-soft: #e6d3a0;
+    --paper: #f3f0e6;
+    --line: #cfc9b6;
+    --ink: #1d2a27;
+    --muted: #5a6b66;
+    --logo-size: 100px; /* 👈 change to make the header logo bigger or smaller */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: "Cairo", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+}
+
+/* ---------- Header ---------- */
+.top-bar {
+    background: var(--green);
+    border-bottom: 4px solid var(--gold);
+    padding: 24px 20px;
+}
+
+.top-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo {
+    width: var(--logo-size);
+    height: var(--logo-size);
+    flex: none;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.logo-fallback {
+    display: none;
+    width: var(--logo-size);
+    height: var(--logo-size);
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    border: 2px dashed var(--gold);
+    color: var(--gold-soft);
+    font-family: "Amiri", serif;
+    font-size: 1.8rem;
+}
+
+.school-ar {
+    font-family: "Amiri", serif;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    color: var(--gold-soft);
+}
+
+h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* ---------- Cards ---------- */
+.page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+    display: grid;
+    gap: 16px;
+}
+
+.box {
+    background: #fff;
+    border: 1px solid #e2dcc9;
+    border-radius: 14px;
+    padding: 20px;
+    display: grid;
+    gap: 14px;
+}
+
+.box h3 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.step {
+    width: 32px;
+    height: 32px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--green);
+    color: var(--gold-soft);
+    font-size: 1rem;
+}
+
+label {
+    font-size: .9rem;
+    font-weight: 600;
+    margin-bottom: -8px;
+}
+
+input, select {
+    width: 100%;
+    height: 48px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 1rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--green-2);
+    box-shadow: 0 0 0 3px rgba(17,89,74,.18);
+}
+
+button {
+    width: 100%;
+    height: 50px;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--green-2);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s, transform .05s;
+}
+
+button:hover { background: var(--green); }
+button:active { transform: translateY(1px); }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.btn-purple {
+    color: var(--green);
+    background: #fff;
+    border: 2px solid var(--gold);
+}
+
+.btn-purple:hover { background: #faf5e6; }
+
+p { line-height: 1.6; color: var(--muted); font-size: .95rem; }
+
+small { color: var(--muted); font-size: .88rem; }
+
+/* ---------- Messages ---------- */
+.success { color: #1b7a4b; font-weight: 700; }
+.error { color: #b3261e; font-weight: 700; }
+
+@media (min-width: 700px) {
+    .box { padding: 24px; }
+}
 </style>
 </head>
 <body>
 
-<h2>Admin Dashboard</h2>
+<header class="top-bar">
+    <div class="top-inner">
+        <!-- 👇 PUT YOUR LOGO HERE: change the src to your file path or link -->
+        <img
+            class="logo"
+            src="my-logo.png"
+            alt="School logo"
+            onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='grid';"
+        >
+        <div class="logo-fallback" id="logoFallback">ص</div>
+
+        <div>
+            <div class="school-ar" dir="rtl">مدرسة صوت الحق</div>
+                                                                                                                
+            <h2>Admin Dashboard</h2>
+        </div>
+    </div>
+</header>
+
+<main class="page">
 
 <!-- 1. ADD CLASS -->
 <div class="box">
-<h3>1. Add Class</h3>
-<input type="text" id="className" placeholder="e.g. SS 1A, JSS2">
+<h3><span class="step">1</span>Add Class</h3>
+<input type="text" id="className" placeholder="e.g. SS 1A, JSS2" aria-label="Class name">
 <button onclick="addClass()">Add Class</button>
 <div id="classMsg"></div>
 </div>
 
 <!-- 2. ADD SUBJECT -->
 <div class="box">
-<h3>2. Add Subject</h3>
-<input type="text" id="subjectName" placeholder="e.g. Mathematics">
+<h3><span class="step">2</span>Add Subject</h3>
+<input type="text" id="subjectName" placeholder="e.g. Mathematics" aria-label="Subject name">
 <button onclick="addSubject()">Add Subject</button>
 <div id="subjectMsg"></div>
 </div>
 
 <!-- 3. ASSIGN SUBJECT TO CLASS -->
 <div class="box">
-<h3>3. Assign Subject to Class</h3>
-<label>Select Class</label>
+<h3><span class="step">3</span>Assign Subject to Class</h3>
+<label for="assignClass">Select Class</label>
 <select id="assignClass"><option value="">Loading classes...</option></select>
 
-<label>Select Subject</label>
+<label for="assignSubject">Select Subject</label>
 <select id="assignSubject"><option value="">Loading subjects...</option></select>
 
 <button onclick="assignSubject()">Assign Subject</button>
@@ -54,12 +234,12 @@ small {color: #666;}
 <small>Link subjects to each class</small>
 </div>
 
-<!-- 4. ADD STUDENT - CLEAN, NO REG NO -->
+<!-- 4. ADD STUDENT -->
 <div class="box">
-<h3>4. Add Student</h3>
-<input type="text" id="studName" placeholder="Student Full Name">
+<h3><span class="step">4</span>Add Student</h3>
+<input type="text" id="studName" placeholder="Student Full Name" aria-label="Student full name">
 
-<label>Select Class</label>
+<label for="studClass">Select Class</label>
 <select id="studClass"><option value="">Loading classes...</option></select>
 
 <button onclick="addStudent()">Save Student</button>
@@ -68,12 +248,14 @@ small {color: #666;}
 
 <!-- 5. MANAGE STUDENTS - LINK TO FULL PAGE -->
 <div class="box">
-<h3>5. Manage Students</h3>
-<p>For classes with 50+ students, use full page manager to avoid scrolling.</p>
+<h3><span class="step">5</span>Manage Students</h3>
+<p>view student list</p>
 <button class="btn-purple" onclick="window.location.href='managestudents.html'">
 Open Full Student Manager →
 </button>
 </div>
+
+</main>
 
 <script>
 const SUPABASE_URL = 'https://epgegesdptpaegycughz.supabase.co'
@@ -170,4 +352,5 @@ function showMsg(id, text, type) {
 }
 </script>
 </body>
-</html>
+    </html>
+    
