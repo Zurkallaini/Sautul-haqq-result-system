@@ -15,6 +15,7 @@ form.addEventListener("submit", function(e) {
         password === "Admin@2026"
     ) {
         message.innerHTML = "Admin Login Successful";
+        message.className = "success";
 
         setTimeout(() => {
             window.location.href = "admin.html";
@@ -26,6 +27,7 @@ form.addEventListener("submit", function(e) {
         password === "Teacher@2026"
     ) {
         message.innerHTML = "Teacher Login Successful";
+        message.className = "success";
 
         setTimeout(() => {
             window.location.href = "teacher.html";
@@ -33,5 +35,9 @@ form.addEventListener("submit", function(e) {
 
     } else {
         message.innerHTML = "Wrong username, password, or role";
+        message.className = "";
     }
 });
+
+
+                   
